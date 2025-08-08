@@ -20,14 +20,21 @@ const ClientSelector = ({ selectedClient, onClientSelect, onClose }) => {
   })
 
   useEffect(() => {
-    console.log('ClientSelector: Fetching clients...')
-    // Load data immediately
-    dispatch(fetchClients()).then((result) => {
-      console.log('ClientSelector: Clients loaded:', result.payload?.length || 0, 'clients')
-    }).catch((error) => {
-      console.error('ClientSelector: Error loading clients:', error)
-    })
-  }, [dispatch])
+    console.log('ClientSelector: Checking if clients need to be loaded')
+    console.log('ClientSelector: Current clients count:', clients.length)
+    
+    // Only load if clients are not already available
+    if (clients.length === 0 && !isLoading) {
+      console.log('ClientSelector: Loading clients...')
+      dispatch(fetchClients()).then((result) => {
+        console.log('ClientSelector: Clients loaded:', result.payload?.length || 0, 'clients')
+      }).catch((error) => {
+        console.error('ClientSelector: Error loading clients:', error)
+      })
+    } else {
+      console.log('ClientSelector: Clients already loaded, skipping fetch')
+    }
+  }, [dispatch, clients.length, isLoading])
 
   // Also load data when component mounts to ensure fresh data
   useEffect(() => {

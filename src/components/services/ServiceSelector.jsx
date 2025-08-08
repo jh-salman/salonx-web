@@ -20,14 +20,21 @@ const ServiceSelector = ({ selectedService, onServiceSelect, onClose }) => {
   })
 
   useEffect(() => {
-    console.log('ServiceSelector: Fetching services...')
-    // Load data immediately
-    dispatch(fetchServices()).then((result) => {
-      console.log('ServiceSelector: Services loaded:', result.payload?.length || 0, 'services')
-    }).catch((error) => {
-      console.error('ServiceSelector: Error loading services:', error)
-    })
-  }, [dispatch])
+    console.log('ServiceSelector: Checking if services need to be loaded')
+    console.log('ServiceSelector: Current services count:', services.length)
+    
+    // Only load if services are not already available
+    if (services.length === 0 && !isLoading) {
+      console.log('ServiceSelector: Loading services...')
+      dispatch(fetchServices()).then((result) => {
+        console.log('ServiceSelector: Services loaded:', result.payload?.length || 0, 'services')
+      }).catch((error) => {
+        console.error('ServiceSelector: Error loading services:', error)
+      })
+    } else {
+      console.log('ServiceSelector: Services already loaded, skipping fetch')
+    }
+  }, [dispatch, services.length, isLoading])
 
   // Also load data when component mounts to ensure fresh data
   useEffect(() => {

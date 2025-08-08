@@ -128,7 +128,13 @@ const initialState = {
   dataLoadError: null,
   lastDataFetch: null,
   dataFetchCount: 0,
-  isFetching: false // Prevent duplicate calls
+  isFetching: false, // Prevent duplicate calls
+  clientsLoaded: false,
+  servicesLoaded: false,
+  appointmentsLoaded: false,
+  brandingLoaded: false,
+  performanceLoaded: false,
+  waitlistLoaded: false
 }
 
 const appSlice = createSlice({
@@ -168,11 +174,25 @@ const appSlice = createSlice({
         state.dataFetchCount += 1
         state.dataLoadError = null
         
+        // Mark all data as loaded
+        state.clientsLoaded = true
+        state.servicesLoaded = true
+        state.appointmentsLoaded = true
+        state.brandingLoaded = true
+        state.performanceLoaded = true
+        state.waitlistLoaded = true
+        
         // Save to localStorage to persist data loading state
         localStorage.setItem('salonx-data-loaded', JSON.stringify({
           isInitialDataLoaded: true,
           lastDataFetch: state.lastDataFetch,
-          dataFetchCount: state.dataFetchCount
+          dataFetchCount: state.dataFetchCount,
+          clientsLoaded: true,
+          servicesLoaded: true,
+          appointmentsLoaded: true,
+          brandingLoaded: true,
+          performanceLoaded: true,
+          waitlistLoaded: true
         }))
         
         console.log('appSlice: Initial data fetch completed successfully')
@@ -205,5 +225,13 @@ export const selectIsDataLoading = (state) => state.app.isDataLoading
 export const selectDataLoadError = (state) => state.app.dataLoadError
 export const selectLastDataFetch = (state) => state.app.lastDataFetch
 export const selectDataFetchCount = (state) => state.app.dataFetchCount
+
+// Individual data loaded states
+export const selectClientsLoaded = (state) => state.app.clientsLoaded
+export const selectServicesLoaded = (state) => state.app.servicesLoaded
+export const selectAppointmentsLoaded = (state) => state.app.appointmentsLoaded
+export const selectBrandingLoaded = (state) => state.app.brandingLoaded
+export const selectPerformanceLoaded = (state) => state.app.performanceLoaded
+export const selectWaitlistLoaded = (state) => state.app.waitlistLoaded
 
 export default appSlice.reducer 

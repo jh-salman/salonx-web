@@ -78,29 +78,41 @@ const CreateAppointmentForm = ({ onClose, selectedDate = null, appointment = nul
 
   // Fetch clients and services on component mount
   useEffect(() => {
-    console.log('CreateAppointmentForm: Fetching clients and services')
+    console.log('CreateAppointmentForm: Checking if data needs to be loaded')
+    console.log('CreateAppointmentForm: Current clients count:', clients.length)
+    console.log('CreateAppointmentForm: Current services count:', services.length)
     
-    // Load data immediately without waiting for other data
+    // Only load data if it's not already available
     const loadData = async () => {
-      try {
-        console.log('CreateAppointmentForm: Loading clients...')
-        await dispatch(fetchClients()).unwrap()
-        console.log('CreateAppointmentForm: Clients loaded successfully')
-      } catch (error) {
-        console.error('CreateAppointmentForm: Error loading clients:', error)
+      // Check if clients are already loaded
+      if (clients.length === 0 && !clientsLoading) {
+        try {
+          console.log('CreateAppointmentForm: Loading clients...')
+          await dispatch(fetchClients()).unwrap()
+          console.log('CreateAppointmentForm: Clients loaded successfully')
+        } catch (error) {
+          console.error('CreateAppointmentForm: Error loading clients:', error)
+        }
+      } else {
+        console.log('CreateAppointmentForm: Clients already loaded, skipping fetch')
       }
       
-      try {
-        console.log('CreateAppointmentForm: Loading services...')
-        await dispatch(fetchServices()).unwrap()
-        console.log('CreateAppointmentForm: Services loaded successfully')
-      } catch (error) {
-        console.error('CreateAppointmentForm: Error loading services:', error)
+      // Check if services are already loaded
+      if (services.length === 0 && !servicesLoading) {
+        try {
+          console.log('CreateAppointmentForm: Loading services...')
+          await dispatch(fetchServices()).unwrap()
+          console.log('CreateAppointmentForm: Services loaded successfully')
+        } catch (error) {
+          console.error('CreateAppointmentForm: Error loading services:', error)
+        }
+      } else {
+        console.log('CreateAppointmentForm: Services already loaded, skipping fetch')
       }
     }
     
     loadData()
-  }, [dispatch])
+  }, [dispatch, clients.length, services.length, clientsLoading, servicesLoading])
 
   // Set selected client and service when editing
   useEffect(() => {
