@@ -7,6 +7,7 @@ import { addSuccess, addError } from '../../features/alerts/alertsSlice'
 import { Calendar, Clock, User, DollarSign, FileText, X } from 'lucide-react'
 import ClientSelector from '../clients/ClientSelector'
 import ServiceSelector from '../services/ServiceSelector'
+import LoadingSpinner from '../shared/LoadingSpinner'
 
 const CreateAppointmentForm = ({ onClose, selectedDate = null, appointment = null, onSubmit = null, isEditing = false }) => {
   const dispatch = useDispatch()
@@ -55,6 +56,12 @@ const CreateAppointmentForm = ({ onClose, selectedDate = null, appointment = nul
 
   // Check if form is valid for enabling submit button
   const isFormValid = () => {
+    // Don't allow submission while loading
+    if (clientsLoading || servicesLoading) {
+      console.log('CreateAppointmentForm: Form not valid - data is loading')
+      return false
+    }
+    
     // Check all required fields
     const isValid = (
       formData.client_id &&
@@ -70,6 +77,10 @@ const CreateAppointmentForm = ({ onClose, selectedDate = null, appointment = nul
       date: formData.date,
       duration: formData.duration,
       price: formData.price,
+      clientsLoading,
+      servicesLoading,
+      clientsCount: clients.length,
+      servicesCount: services.length,
       isValid: isValid
     })
     
@@ -78,41 +89,48 @@ const CreateAppointmentForm = ({ onClose, selectedDate = null, appointment = nul
 
   // Fetch clients and services on component mount
   useEffect(() => {
-    console.log('CreateAppointmentForm: Checking if data needs to be loaded')
+    console.log('CreateAppointmentForm: Component mounted, loading data...')
     console.log('CreateAppointmentForm: Current clients count:', clients.length)
     console.log('CreateAppointmentForm: Current services count:', services.length)
     
-    // Only load data if it's not already available
+    // Load data when component mounts
     const loadData = async () => {
-      // Check if clients are already loaded
-      if (clients.length === 0 && !clientsLoading) {
-        try {
+      try {
+        // Load clients if not already loaded
+        if (clients.length === 0 && !clientsLoading) {
           console.log('CreateAppointmentForm: Loading clients...')
           await dispatch(fetchClients()).unwrap()
           console.log('CreateAppointmentForm: Clients loaded successfully')
-        } catch (error) {
-          console.error('CreateAppointmentForm: Error loading clients:', error)
+        } else {
+          console.log('CreateAppointmentForm: Clients already loaded, skipping fetch')
         }
-      } else {
-        console.log('CreateAppointmentForm: Clients already loaded, skipping fetch')
-      }
-      
-      // Check if services are already loaded
-      if (services.length === 0 && !servicesLoading) {
-        try {
+        
+        // Load services if not already loaded
+        if (services.length === 0 && !servicesLoading) {
           console.log('CreateAppointmentForm: Loading services...')
           await dispatch(fetchServices()).unwrap()
           console.log('CreateAppointmentForm: Services loaded successfully')
-        } catch (error) {
-          console.error('CreateAppointmentForm: Error loading services:', error)
+        } else {
+          console.log('CreateAppointmentForm: Services already loaded, skipping fetch')
         }
-      } else {
-        console.log('CreateAppointmentForm: Services already loaded, skipping fetch')
+      } catch (error) {
+        console.error('CreateAppointmentForm: Error loading data:', error)
       }
     }
     
     loadData()
-  }, [dispatch, clients.length, services.length, clientsLoading, servicesLoading])
+  }, [dispatch])
+
+  // Debug effect to monitor loading states
+  useEffect(() => {
+    console.log('CreateAppointmentForm: Loading states changed:', {
+      clientsLoading,
+      servicesLoading,
+      clientsCount: clients.length,
+      servicesCount: services.length,
+      formValid: isFormValid()
+    })
+  }, [clientsLoading, servicesLoading, clients.length, services.length])
 
   // Set selected client and service when editing
   useEffect(() => {
@@ -281,6 +299,18 @@ const CreateAppointmentForm = ({ onClose, selectedDate = null, appointment = nul
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          {/* Loading Indicator */}
+          {(clientsLoading || servicesLoading) && (
+            <div className="bg-blue-900 border border-blue-700 rounded-md p-4 mb-4">
+              <LoadingSpinner 
+                color="blue" 
+                text={clientsLoading && servicesLoading ? 'Loading clients and services...' :
+                      clientsLoading ? 'Loading clients...' :
+                      'Loading services...'}
+              />
+            </div>
+          )}
+
           {/* Client Selection */}
           <div className="space-y-2">
             <label className="block text-sm font-medium text-gray-300">
@@ -291,6 +321,7 @@ const CreateAppointmentForm = ({ onClose, selectedDate = null, appointment = nul
                 selectedClient={selectedClient}
                 onClientSelect={handleClientSelect}
                 onClose={() => {}}
+                data-client-selector="true"
               />
             </div>
             {errors.client_id && (
@@ -300,7 +331,22 @@ const CreateAppointmentForm = ({ onClose, selectedDate = null, appointment = nul
               <p className="text-blue-400 text-sm">Loading clients...</p>
             )}
             {!clientsLoading && clients.length === 0 && (
-              <p className="text-yellow-400 text-sm">No clients available. Create one first.</p>
+              <div className="bg-yellow-900 border border-yellow-700 rounded-md p-3">
+                <p className="text-yellow-300 text-sm">No clients available. Please create a client first.</p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    // This will trigger the ClientSelector to show the add form
+                    const clientSelector = document.querySelector('[data-client-selector]')
+                    if (clientSelector) {
+                      clientSelector.click()
+                    }
+                  }}
+                  className="text-yellow-400 hover:text-yellow-300 text-sm underline mt-1"
+                >
+                  Create your first client
+                </button>
+              </div>
             )}
           </div>
 
@@ -314,6 +360,7 @@ const CreateAppointmentForm = ({ onClose, selectedDate = null, appointment = nul
                 selectedService={selectedService}
                 onServiceSelect={handleServiceSelect}
                 onClose={() => {}}
+                data-service-selector="true"
               />
             </div>
             {errors.service_id && (
@@ -323,7 +370,22 @@ const CreateAppointmentForm = ({ onClose, selectedDate = null, appointment = nul
               <p className="text-blue-400 text-sm">Loading services...</p>
             )}
             {!servicesLoading && services.length === 0 && (
-              <p className="text-yellow-400 text-sm">No services available. Create one first.</p>
+              <div className="bg-yellow-900 border border-yellow-700 rounded-md p-3">
+                <p className="text-yellow-300 text-sm">No services available. Please create a service first.</p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    // This will trigger the ServiceSelector to show the add form
+                    const serviceSelector = document.querySelector('[data-service-selector]')
+                    if (serviceSelector) {
+                      serviceSelector.click()
+                    }
+                  }}
+                  className="text-yellow-400 hover:text-yellow-300 text-sm underline mt-1"
+                >
+                  Create your first service
+                </button>
+              </div>
             )}
           </div>
 
@@ -484,10 +546,12 @@ const CreateAppointmentForm = ({ onClose, selectedDate = null, appointment = nul
             </button>
             <button
               type="submit"
-              disabled={isLoading || !isFormValid()}
+              disabled={isLoading || !isFormValid() || clientsLoading || servicesLoading}
               className="px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-md hover:from-purple-700 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              {isLoading ? (isEditing ? 'Updating...' : 'Creating...') : (isEditing ? 'Update Appointment' : 'Create Appointment')}
+              {isLoading ? (isEditing ? 'Updating...' : 'Creating...') : 
+               clientsLoading || servicesLoading ? 'Loading data...' :
+               (isEditing ? 'Update Appointment' : 'Create Appointment')}
             </button>
           </div>
         </form>

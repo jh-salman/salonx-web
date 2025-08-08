@@ -3,8 +3,9 @@ import { useDispatch, useSelector } from 'react-redux'
 import { fetchServices, createService } from '../../features/services/servicesSlice'
 import { addSuccess, addError } from '../../features/alerts/alertsSlice'
 import { FileText, Plus, ChevronDown, X, DollarSign, Clock } from 'lucide-react'
+import LoadingSpinner from '../shared/LoadingSpinner'
 
-const ServiceSelector = ({ selectedService, onServiceSelect, onClose }) => {
+const ServiceSelector = ({ selectedService, onServiceSelect, onClose, ...props }) => {
   const dispatch = useDispatch()
   const services = useSelector(state => state.services.services)
   const isLoading = useSelector(state => state.services.isLoading)
@@ -19,38 +20,19 @@ const ServiceSelector = ({ selectedService, onServiceSelect, onClose }) => {
     duration: 60
   })
 
+  // Load services when component mounts
   useEffect(() => {
-    console.log('ServiceSelector: Checking if services need to be loaded')
-    console.log('ServiceSelector: Current services count:', services.length)
-    
-    // Only load if services are not already available
-    if (services.length === 0 && !isLoading) {
-      console.log('ServiceSelector: Loading services...')
-      dispatch(fetchServices()).then((result) => {
-        console.log('ServiceSelector: Services loaded:', result.payload?.length || 0, 'services')
-      }).catch((error) => {
-        console.error('ServiceSelector: Error loading services:', error)
-      })
-    } else {
-      console.log('ServiceSelector: Services already loaded, skipping fetch')
-    }
-  }, [dispatch, services.length, isLoading])
+    console.log('ServiceSelector: Component mounted, loading services...')
+    dispatch(fetchServices())
+  }, [dispatch])
 
-  // Also load data when component mounts to ensure fresh data
+  // Load services when dropdown opens if not already loaded
   useEffect(() => {
-    if (services.length === 0 && !isLoading) {
-      console.log('ServiceSelector: No services found, refreshing...')
-      dispatch(fetchServices())
-    }
-  }, [dispatch, services.length, isLoading])
-
-  // Force refresh when dropdown opens
-  useEffect(() => {
-    if (isOpen && services.length === 0) {
+    if (isOpen && services.length === 0 && !isLoading) {
       console.log('ServiceSelector: Dropdown opened, loading services...')
       dispatch(fetchServices())
     }
-  }, [isOpen, services.length, dispatch])
+  }, [isOpen, services.length, isLoading, dispatch])
 
   const handleAddService = async () => {
     console.log('ServiceSelector: handleAddService called')
@@ -123,6 +105,8 @@ const ServiceSelector = ({ selectedService, onServiceSelect, onClose }) => {
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="w-full flex items-center justify-between p-3 border border-gray-600 rounded-md bg-gray-700 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-purple-500 text-white"
+        data-service-selector="true"
+        {...props}
       >
         <div className="flex items-center">
           <FileText className="w-4 h-4 text-gray-400 mr-2" />
@@ -161,7 +145,7 @@ const ServiceSelector = ({ selectedService, onServiceSelect, onClose }) => {
           <div className="py-1">
             {isLoading ? (
               <div className="p-3 text-center text-gray-400">
-                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-500 mx-auto mb-2"></div>
+                <LoadingSpinner />
                 Loading services...
               </div>
             ) : filteredServices.length === 0 ? (

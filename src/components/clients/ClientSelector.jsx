@@ -3,8 +3,9 @@ import { useDispatch, useSelector } from 'react-redux'
 import { fetchClients, createClient } from '../../features/clients/clientsSlice'
 import { addSuccess, addError } from '../../features/alerts/alertsSlice'
 import { User, Plus, ChevronDown, X } from 'lucide-react'
+import LoadingSpinner from '../shared/LoadingSpinner'
 
-const ClientSelector = ({ selectedClient, onClientSelect, onClose }) => {
+const ClientSelector = ({ selectedClient, onClientSelect, onClose, ...props }) => {
   const dispatch = useDispatch()
   const clients = useSelector(state => state.clients.clients)
   const isLoading = useSelector(state => state.clients.isLoading)
@@ -19,38 +20,19 @@ const ClientSelector = ({ selectedClient, onClientSelect, onClose }) => {
     birthday: ''
   })
 
+  // Load clients when component mounts
   useEffect(() => {
-    console.log('ClientSelector: Checking if clients need to be loaded')
-    console.log('ClientSelector: Current clients count:', clients.length)
-    
-    // Only load if clients are not already available
-    if (clients.length === 0 && !isLoading) {
-      console.log('ClientSelector: Loading clients...')
-      dispatch(fetchClients()).then((result) => {
-        console.log('ClientSelector: Clients loaded:', result.payload?.length || 0, 'clients')
-      }).catch((error) => {
-        console.error('ClientSelector: Error loading clients:', error)
-      })
-    } else {
-      console.log('ClientSelector: Clients already loaded, skipping fetch')
-    }
-  }, [dispatch, clients.length, isLoading])
+    console.log('ClientSelector: Component mounted, loading clients...')
+    dispatch(fetchClients())
+  }, [dispatch])
 
-  // Also load data when component mounts to ensure fresh data
+  // Load clients when dropdown opens if not already loaded
   useEffect(() => {
-    if (clients.length === 0 && !isLoading) {
-      console.log('ClientSelector: No clients found, refreshing...')
-      dispatch(fetchClients())
-    }
-  }, [dispatch, clients.length, isLoading])
-
-  // Force refresh when dropdown opens
-  useEffect(() => {
-    if (isOpen && clients.length === 0) {
+    if (isOpen && clients.length === 0 && !isLoading) {
       console.log('ClientSelector: Dropdown opened, loading clients...')
       dispatch(fetchClients())
     }
-  }, [isOpen, clients.length, dispatch])
+  }, [isOpen, clients.length, isLoading, dispatch])
 
   const handleAddClient = async () => {
     console.log('ClientSelector: handleAddClient called')
@@ -108,6 +90,8 @@ const ClientSelector = ({ selectedClient, onClientSelect, onClose }) => {
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="w-full flex items-center justify-between p-3 border border-gray-600 rounded-md bg-gray-700 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-purple-500 text-white"
+        data-client-selector="true"
+        {...props}
       >
         <div className="flex items-center">
           <User className="w-4 h-4 text-gray-400 mr-2" />
@@ -146,7 +130,7 @@ const ClientSelector = ({ selectedClient, onClientSelect, onClose }) => {
           <div className="py-1">
             {isLoading ? (
               <div className="p-3 text-center text-gray-400">
-                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-500 mx-auto mb-2"></div>
+                <LoadingSpinner />
                 Loading clients...
               </div>
             ) : filteredClients.length === 0 ? (
