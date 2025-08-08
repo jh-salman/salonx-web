@@ -155,6 +155,12 @@ const servicesSlice = createSlice({
     clearError: (state) => {
       state.error = null
     },
+    // Manual reset for debugging
+    resetLoadingState: (state) => {
+      console.log('servicesSlice: Manually resetting loading state')
+      state.isLoading = false
+      state.error = null
+    },
     // Realtime updates
     serviceAdded: (state, action) => {
       state.services.push(action.payload)
@@ -173,29 +179,35 @@ const servicesSlice = createSlice({
     builder
       // Fetch Services
       .addCase(fetchServices.pending, (state) => {
+        console.log('servicesSlice: Setting loading to true')
         state.isLoading = true
         state.error = null
       })
       .addCase(fetchServices.fulfilled, (state, action) => {
+        console.log('servicesSlice: Setting loading to false, loaded', action.payload?.length || 0, 'services')
         state.isLoading = false
         state.services = action.payload
         state.error = null
       })
       .addCase(fetchServices.rejected, (state, action) => {
+        console.log('servicesSlice: Setting loading to false due to error:', action.payload)
         state.isLoading = false
         state.error = action.payload
       })
       // Create Service
       .addCase(createService.pending, (state) => {
+        console.log('servicesSlice: Creating service, setting loading to true')
         state.isLoading = true
         state.error = null
       })
       .addCase(createService.fulfilled, (state, action) => {
+        console.log('servicesSlice: Service created, setting loading to false')
         state.isLoading = false
         state.services.push(action.payload)
         state.error = null
       })
       .addCase(createService.rejected, (state, action) => {
+        console.log('servicesSlice: Service creation failed, setting loading to false:', action.payload)
         state.isLoading = false
         state.error = action.payload
       })
@@ -239,6 +251,7 @@ export const {
   setFilters, 
   clearFilters, 
   clearError,
+  resetLoadingState,
   serviceAdded,
   serviceUpdated,
   serviceDeleted

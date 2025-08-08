@@ -241,6 +241,12 @@ const clientsSlice = createSlice({
     clearSearchResults: (state) => {
       state.searchResults = []
     },
+    // Manual reset for debugging
+    resetLoadingState: (state) => {
+      console.log('clientsSlice: Manually resetting loading state')
+      state.isLoading = false
+      state.error = null
+    },
     // Realtime updates
     clientAdded: (state, action) => {
       state.clients.push(action.payload)
@@ -266,22 +272,34 @@ const clientsSlice = createSlice({
     builder
       // Fetch Clients
       .addCase(fetchClients.pending, (state) => {
+        console.log('clientsSlice: Setting loading to true')
         state.isLoading = true
         state.error = null
       })
       .addCase(fetchClients.fulfilled, (state, action) => {
+        console.log('clientsSlice: Setting loading to false, loaded', action.payload?.length || 0, 'clients')
         state.isLoading = false
         state.clients = action.payload
       })
       .addCase(fetchClients.rejected, (state, action) => {
+        console.log('clientsSlice: Setting loading to false due to error:', action.payload)
         state.isLoading = false
         state.error = action.payload
       })
       // Create Client
+      .addCase(createClient.pending, (state) => {
+        console.log('clientsSlice: Creating client, setting loading to true')
+        state.isLoading = true
+        state.error = null
+      })
       .addCase(createClient.fulfilled, (state, action) => {
+        console.log('clientsSlice: Client created, setting loading to false')
+        state.isLoading = false
         state.clients.push(action.payload)
       })
       .addCase(createClient.rejected, (state, action) => {
+        console.log('clientsSlice: Client creation failed, setting loading to false:', action.payload)
+        state.isLoading = false
         state.error = action.payload
       })
       // Update Client
@@ -329,6 +347,7 @@ export const {
   clearFilters,
   clearError,
   clearSearchResults,
+  resetLoadingState,
   clientAdded,
   clientUpdated,
   clientDeleted

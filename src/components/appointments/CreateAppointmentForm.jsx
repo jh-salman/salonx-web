@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { createAppointment, updateAppointment } from '../../features/appointments/appointmentsSlice'
-import { fetchClients } from '../../features/clients/clientsSlice'
-import { fetchServices } from '../../features/services/servicesSlice'
+import { fetchClients, resetLoadingState as resetClientsLoading } from '../../features/clients/clientsSlice'
+import { fetchServices, resetLoadingState as resetServicesLoading } from '../../features/services/servicesSlice'
 import { addSuccess, addError } from '../../features/alerts/alertsSlice'
 import { Calendar, Clock, User, DollarSign, FileText, X } from 'lucide-react'
 import ClientSelector from '../clients/ClientSelector'
@@ -128,9 +128,54 @@ const CreateAppointmentForm = ({ onClose, selectedDate = null, appointment = nul
       servicesLoading,
       clientsCount: clients.length,
       servicesCount: services.length,
-      formValid: isFormValid()
+      formValid: isFormValid(),
+      timestamp: new Date().toISOString()
     })
   }, [clientsLoading, servicesLoading, clients.length, services.length])
+
+  // Temporary fix: Reset loading states if they get stuck
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      if (clientsLoading && clients.length > 0) {
+        console.log('CreateAppointmentForm: Clients loading stuck, resetting...')
+        dispatch(resetClientsLoading())
+      }
+      if (servicesLoading && services.length > 0) {
+        console.log('CreateAppointmentForm: Services loading stuck, resetting...')
+        dispatch(resetServicesLoading())
+      }
+    }, 5000) // 5 second timeout
+
+    return () => clearTimeout(timeout)
+  }, [clientsLoading, servicesLoading, clients.length, services.length, dispatch])
+
+  // Immediate fix: Reset loading states if data is available but loading is still true
+  useEffect(() => {
+    if (clientsLoading && clients.length > 0) {
+      console.log('CreateAppointmentForm: Clients data available but loading still true, resetting...')
+      dispatch(resetClientsLoading())
+    }
+    if (servicesLoading && services.length > 0) {
+      console.log('CreateAppointmentForm: Services data available but loading still true, resetting...')
+      dispatch(resetServicesLoading())
+    }
+  }, [clientsLoading, servicesLoading, clients.length, services.length, dispatch])
+
+  // Additional debug effect to monitor Redux state
+  useEffect(() => {
+    console.log('CreateAppointmentForm: Redux state check:', {
+      clientsState: {
+        isLoading: clientsLoading,
+        count: clients.length,
+        hasData: clients.length > 0
+      },
+      servicesState: {
+        isLoading: servicesLoading,
+        count: services.length,
+        hasData: services.length > 0
+      }
+    })
+  }, [clientsLoading, servicesLoading, clients, services])
 
   // Set selected client and service when editing
   useEffect(() => {
