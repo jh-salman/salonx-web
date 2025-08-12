@@ -8,7 +8,8 @@ import authReducer from '../features/auth/authSlice'
 import appointmentsReducer from '../features/appointments/appointmentsSlice'
 import clientsReducer from '../features/clients/clientsSlice'
 import servicesReducer from '../features/services/servicesSlice'
-import brandingReducer from '../features/branding/brandingSlice'
+
+import reviewsReducer from '../features/reviews/reviewsSlice'
 import performanceReducer from '../features/performance/performanceSlice'
 import waitlistReducer from '../features/waitlist/waitlistSlice'
 import calendarReducer from '../features/calendar/calendarSlice'
@@ -24,7 +25,8 @@ const persistConfig = {
     'appointments', 
     'clients',
     'services',
-    'branding',
+
+    'reviews',
     'performance',
     'waitlist',
     'calendar'
@@ -38,7 +40,8 @@ const rootReducer = combineReducers({
   appointments: appointmentsReducer,
   clients: clientsReducer,
   services: servicesReducer,
-  branding: brandingReducer,
+
+  reviews: reviewsReducer,
   performance: performanceReducer,
   waitlist: waitlistReducer,
   calendar: calendarReducer,

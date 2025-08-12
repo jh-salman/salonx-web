@@ -24,6 +24,18 @@ export const signUp = createAsyncThunk(
 
       const user = authData.user
 
+      // If email confirmation is required, there may be no active session
+      // In that case, we cannot create profile/brand due to RLS. Prompt user to confirm email first.
+      if (!authData.session) {
+        return {
+          awaitingConfirmation: true,
+          user: user,
+          profile: null,
+          mode: null,
+          brandId: null
+        }
+      }
+
       // Create profile first (before brand creation)
       let profileData = null
       let profileError = null
@@ -166,7 +178,8 @@ export const signUp = createAsyncThunk(
         user,
         profile: profileData,
         mode: mode,
-        brandId: brandId
+        brandId: brandId,
+        awaitingConfirmation: false
       }
     } catch (error) {
       return rejectWithValue(error.message)
@@ -493,20 +506,29 @@ const authSlice = createSlice({
       })
       .addCase(signUp.fulfilled, (state, action) => {
         state.isLoading = false
-        state.user = action.payload.user
-        state.profile = action.payload.profile
-        state.mode = action.payload.mode
-        state.brandId = action.payload.brandId
-        state.isAuthenticated = true
-        
-        // Save to localStorage
-        localStorage.setItem('salonx-auth', JSON.stringify({
-          user: action.payload.user,
-          profile: action.payload.profile,
-          mode: action.payload.mode,
-          brandId: action.payload.brandId,
-          isAuthenticated: true
-        }))
+        if (action.payload.awaitingConfirmation) {
+          // Do not mark as authenticated yet
+          state.user = action.payload.user
+          state.profile = null
+          state.mode = null
+          state.brandId = null
+          state.isAuthenticated = false
+          // Do not persist auth yet
+        } else {
+          state.user = action.payload.user
+          state.profile = action.payload.profile
+          state.mode = action.payload.mode
+          state.brandId = action.payload.brandId
+          state.isAuthenticated = true
+          // Save to localStorage
+          localStorage.setItem('salonx-auth', JSON.stringify({
+            user: action.payload.user,
+            profile: action.payload.profile,
+            mode: action.payload.mode,
+            brandId: action.payload.brandId,
+            isAuthenticated: true
+          }))
+        }
       })
       .addCase(signUp.rejected, (state, action) => {
         state.isLoading = false

@@ -34,12 +34,7 @@ const SimpleDashboard = () => {
                 >
                   View Calendar
                 </Link>
-                <Link 
-                  to="/debug" 
-                  className="block w-full bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors text-center"
-                >
-                  Debug Info
-                </Link>
+
               </div>
             </div>
           </div>

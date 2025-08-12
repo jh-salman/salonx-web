@@ -103,7 +103,15 @@ const SignUp = () => {
       }
 
       const result = await dispatch(signUp(signUpData)).unwrap()
-      
+      if (result?.awaitingConfirmation) {
+        dispatch(addSuccess({
+          message: 'We sent you a confirmation email. Please verify and then sign in.',
+          title: 'Check your email'
+        }))
+        // Stay on signup page; optionally clear password fields
+        setFormData(prev => ({ ...prev, password: '', confirmPassword: '' }))
+        return
+      }
       if (result) {
         dispatch(addSuccess({
           message: 'Account created successfully! Welcome to SalonX.',
@@ -144,7 +152,7 @@ const SignUp = () => {
           <div className="space-y-4">
             {/* Mode Selection */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-300 mb-2">
                 Account Type
               </label>
               <div className="grid grid-cols-2 gap-3">
@@ -153,8 +161,8 @@ const SignUp = () => {
                   onClick={() => setFormData(prev => ({ ...prev, mode: APP_MODES.SINGLE }))}
                   className={`p-3 rounded-lg border-2 text-sm font-medium transition-colors ${
                     formData.mode === APP_MODES.SINGLE
-                      ? 'border-primary-500 bg-primary-50 text-primary-700'
-                      : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
+                      ? 'border-purple-500/60 bg-purple-500/10 text-purple-300'
+                      : 'border-gray-600 bg-gray-800 text-gray-300 hover:border-gray-500'
                   }`}
                 >
                   Single Stylist
@@ -164,8 +172,8 @@ const SignUp = () => {
                   onClick={() => setFormData(prev => ({ ...prev, mode: APP_MODES.TEAM }))}
                   className={`p-3 rounded-lg border-2 text-sm font-medium transition-colors ${
                     formData.mode === APP_MODES.TEAM
-                      ? 'border-primary-500 bg-primary-50 text-primary-700'
-                      : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
+                      ? 'border-purple-500/60 bg-purple-500/10 text-purple-300'
+                      : 'border-gray-600 bg-gray-800 text-gray-300 hover:border-gray-500'
                   }`}
                 >
                   Team/Brand
@@ -176,7 +184,7 @@ const SignUp = () => {
             {/* Personal Information */}
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label htmlFor="fullName" className="block text-sm font-medium text-gray-700">
+                <label htmlFor="fullName" className="block text-sm font-medium text-gray-300">
                   Full Name
                 </label>
                 <div className="mt-1 relative">
@@ -190,8 +198,8 @@ const SignUp = () => {
                     required
                     value={formData.fullName}
                     onChange={handleInputChange}
-                    className={`appearance-none relative block w-full px-3 py-2 pl-10 border rounded-md placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-primary-500 focus:border-primary-500 focus:z-10 sm:text-sm ${
-                      validationErrors.fullName ? 'border-red-300' : 'border-gray-300'
+                    className={`appearance-none relative block w-full px-3 py-2 pl-10 border rounded-md placeholder-gray-500 bg-gray-800 text-gray-100 focus:outline-none focus:ring-purple-500 focus:border-purple-500 focus:z-10 sm:text-sm ${
+                      validationErrors.fullName ? 'border-red-400' : 'border-gray-600'
                     }`}
                     placeholder="Enter your full name"
                   />
@@ -202,7 +210,7 @@ const SignUp = () => {
               </div>
 
               <div>
-                <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
+                <label htmlFor="phone" className="block text-sm font-medium text-gray-300">
                   Phone
                 </label>
                 <div className="mt-1 relative">
@@ -216,8 +224,8 @@ const SignUp = () => {
                     required
                     value={formData.phone}
                     onChange={handleInputChange}
-                    className={`appearance-none relative block w-full px-3 py-2 pl-10 border rounded-md placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-primary-500 focus:border-primary-500 focus:z-10 sm:text-sm ${
-                      validationErrors.phone ? 'border-red-300' : 'border-gray-300'
+                    className={`appearance-none relative block w-full px-3 py-2 pl-10 border rounded-md placeholder-gray-500 bg-gray-800 text-gray-100 focus:outline-none focus:ring-purple-500 focus:border-purple-500 focus:z-10 sm:text-sm ${
+                      validationErrors.phone ? 'border-red-400' : 'border-gray-600'
                     }`}
                     placeholder="Enter your phone"
                   />
@@ -231,7 +239,7 @@ const SignUp = () => {
             {/* Brand Name for Team Mode */}
             {formData.mode === APP_MODES.TEAM && (
               <div>
-                <label htmlFor="brandName" className="block text-sm font-medium text-gray-700">
+                <label htmlFor="brandName" className="block text-sm font-medium text-gray-300">
                   Brand Name
                 </label>
                 <div className="mt-1 relative">
@@ -245,8 +253,8 @@ const SignUp = () => {
                     required
                     value={formData.brandName}
                     onChange={handleInputChange}
-                    className={`appearance-none relative block w-full px-3 py-2 pl-10 border rounded-md placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-primary-500 focus:border-primary-500 focus:z-10 sm:text-sm ${
-                      validationErrors.brandName ? 'border-red-300' : 'border-gray-300'
+                    className={`appearance-none relative block w-full px-3 py-2 pl-10 border rounded-md placeholder-gray-500 bg-gray-800 text-gray-100 focus:outline-none focus:ring-purple-500 focus:border-purple-500 focus:z-10 sm:text-sm ${
+                      validationErrors.brandName ? 'border-red-400' : 'border-gray-600'
                     }`}
                     placeholder="Enter your brand name"
                   />
@@ -259,7 +267,7 @@ const SignUp = () => {
 
             {/* Role Selection */}
             <div>
-              <label htmlFor="role" className="block text-sm font-medium text-gray-700">
+              <label htmlFor="role" className="block text-sm font-medium text-gray-300">
                 Role
               </label>
               <select
@@ -267,7 +275,7 @@ const SignUp = () => {
                 name="role"
                 value={formData.role}
                 onChange={handleInputChange}
-                className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md"
+                className="mt-1 block w-full pl-3 pr-10 py-2 text-base bg-gray-800 border-gray-600 text-gray-100 focus:outline-none focus:ring-purple-500 focus:border-purple-500 sm:text-sm rounded-md"
               >
                 <option value={USER_ROLES.STYLIST}>Stylist</option>
                 {formData.mode === APP_MODES.TEAM && (
@@ -278,7 +286,7 @@ const SignUp = () => {
 
             {/* Email */}
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+              <label htmlFor="email" className="block text-sm font-medium text-gray-300">
                 Email address
               </label>
               <div className="mt-1 relative">
@@ -293,8 +301,8 @@ const SignUp = () => {
                   required
                   value={formData.email}
                   onChange={handleInputChange}
-                  className={`appearance-none relative block w-full px-3 py-2 pl-10 border rounded-md placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-primary-500 focus:border-primary-500 focus:z-10 sm:text-sm ${
-                    validationErrors.email ? 'border-red-300' : 'border-gray-300'
+                  className={`appearance-none relative block w-full px-3 py-2 pl-10 border rounded-md placeholder-gray-500 bg-gray-800 text-gray-100 focus:outline-none focus:ring-purple-500 focus:border-purple-500 focus:z-10 sm:text-sm ${
+                    validationErrors.email ? 'border-red-400' : 'border-gray-600'
                   }`}
                   placeholder="Enter your email"
                 />
@@ -306,7 +314,7 @@ const SignUp = () => {
 
             {/* Password */}
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+              <label htmlFor="password" className="block text-sm font-medium text-gray-300">
                 Password
               </label>
               <div className="mt-1 relative">
@@ -321,8 +329,8 @@ const SignUp = () => {
                   required
                   value={formData.password}
                   onChange={handleInputChange}
-                  className={`appearance-none relative block w-full px-3 py-2 pl-10 pr-10 border rounded-md placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-primary-500 focus:border-primary-500 focus:z-10 sm:text-sm ${
-                    validationErrors.password ? 'border-red-300' : 'border-gray-300'
+                  className={`appearance-none relative block w-full px-3 py-2 pl-10 pr-10 border rounded-md placeholder-gray-500 bg-gray-800 text-gray-100 focus:outline-none focus:ring-purple-500 focus:border-purple-500 focus:z-10 sm:text-sm ${
+                    validationErrors.password ? 'border-red-400' : 'border-gray-600'
                   }`}
                   placeholder="Enter your password"
                 />
@@ -345,7 +353,7 @@ const SignUp = () => {
 
             {/* Confirm Password */}
             <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
+              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-300">
                 Confirm Password
               </label>
               <div className="mt-1 relative">
@@ -360,8 +368,8 @@ const SignUp = () => {
                   required
                   value={formData.confirmPassword}
                   onChange={handleInputChange}
-                  className={`appearance-none relative block w-full px-3 py-2 pl-10 pr-10 border rounded-md placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-primary-500 focus:border-primary-500 focus:z-10 sm:text-sm ${
-                    validationErrors.confirmPassword ? 'border-red-300' : 'border-gray-300'
+                  className={`appearance-none relative block w-full px-3 py-2 pl-10 pr-10 border rounded-md placeholder-gray-500 bg-gray-800 text-gray-100 focus:outline-none focus:ring-purple-500 focus:border-purple-500 focus:z-10 sm:text-sm ${
+                    validationErrors.confirmPassword ? 'border-red-400' : 'border-gray-600'
                   }`}
                   placeholder="Confirm your password"
                 />
@@ -402,8 +410,8 @@ const SignUp = () => {
         </form>
 
         {error && (
-          <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-md">
-            <p className="text-sm text-red-600">{error}</p>
+          <div className="mt-4 p-4 bg-red-900/30 border border-red-700/60 rounded-md">
+            <p className="text-sm text-red-300">{error}</p>
           </div>
         )}
       </div>

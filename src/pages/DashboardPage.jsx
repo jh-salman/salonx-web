@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { 
   Calendar, 
   Clock, 
@@ -25,10 +25,7 @@ import {
 
 // Redux imports
 import { selectProfile, selectMode, selectBrandId } from '../features/auth/authSlice'
-import { 
-  selectBranding, 
-  fetchBranding 
-} from '../features/branding/brandingSlice'
+
 import { 
   selectPerformance, 
   fetchPerformance 
@@ -45,13 +42,17 @@ import {
   fetchWaitlist,
   promoteToAppointment
 } from '../features/waitlist/waitlistSlice'
+import { createReview } from '../features/reviews/reviewsSlice'
+import { supabase } from '../lib/supabase'
 
 // Components
 import LoadingSpinner from '../components/shared/LoadingSpinner'
 import SignoutButton from '../components/SignoutButton'
 
+
 const DashboardPage = () => {
   const dispatch = useDispatch()
+  const navigate = useNavigate()
   
   // Auth state
   const profile = useSelector(selectProfile)
@@ -59,7 +60,6 @@ const DashboardPage = () => {
   const brandId = useSelector(selectBrandId)
   
   // Data state
-  const branding = useSelector(selectBranding)
   const performance = useSelector(selectPerformance)
   const appointments = useSelector(selectAppointments)
   const waitlist = useSelector(selectWaitlist)
@@ -68,6 +68,13 @@ const DashboardPage = () => {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState(null)
   const [calendarView, setCalendarView] = useState('week')
+  const [now, setNow] = useState(Date.now())
+  const [reviewApt, setReviewApt] = useState(null)
+  const [confirmTimerApt, setConfirmTimerApt] = useState(null)
+  const [timerMinutes, setTimerMinutes] = useState('')
+  const [reviewRating, setReviewRating] = useState(5)
+  const [reviewText, setReviewText] = useState('')
+
 
   // Fetch initial data
   useEffect(() => {
@@ -76,8 +83,9 @@ const DashboardPage = () => {
         setIsLoading(true)
         setError(null)
         
+        const DASHBOARD_FETCH_TIMEOUT_MS = 15000
+
         const promises = [
-          dispatch(fetchBranding()),
           dispatch(fetchPerformance()),
           dispatch(fetchAppointments()),
           dispatch(fetchWaitlist())
@@ -86,10 +94,14 @@ const DashboardPage = () => {
         // Wait for at least one promise to complete
         await Promise.race([
           Promise.any(promises),
-          new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 5000))
+          new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('Timeout')), DASHBOARD_FETCH_TIMEOUT_MS)
+          )
         ])
       } catch (err) {
-        console.warn('Dashboard data fetch warning:', err)
+        if (import.meta.env.PROD && err.message === 'Timeout') {
+          console.warn('Dashboard data fetch warning:', err)
+        }
         // Don't set error for timeout, just continue
         if (err.message !== 'Timeout') {
           setError('Failed to load dashboard data')
@@ -105,10 +117,54 @@ const DashboardPage = () => {
     }
   }, [dispatch, profile])
 
-  // Get next 4 active appointments
-  const activeAppointments = appointments
-    .filter(apt => apt.status !== 'completed')
-    .slice(0, 4)
+  // Tick every second for timers
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 1000)
+    return () => clearInterval(t)
+  }, [])
+
+  // Helper to get start timestamp for an appointment
+  const getStartMs = (apt) => {
+    try {
+      if (apt.date) return new Date(apt.date).getTime()
+      if (apt.appointment_date && apt.appointment_time) return new Date(`${apt.appointment_date}T${apt.appointment_time}`).getTime()
+      if (apt.appointment_date) return new Date(apt.appointment_date).getTime()
+    } catch {}
+    return Number.MAX_SAFE_INTEGER
+  }
+
+  // Get today's active appointments sorted by time
+  const today = new Date().toISOString().split('T')[0]
+  const activeAppointments = [...appointments]
+    .filter(apt => 
+      apt.status !== 'completed' && 
+      !apt.parked && 
+      (apt.appointment_date === today || apt.date?.startsWith(today))
+    )
+    .sort((a, b) => {
+      const aStart = getStartMs(a)
+      const bStart = getStartMs(b)
+      // If start times are equal, sort by duration (shorter first)
+      if (aStart === bStart) {
+        const aDuration = a.duration || 60
+        const bDuration = b.duration || 60
+        return aDuration - bDuration
+      }
+      return aStart - bStart
+    })
+
+  // Real-time effect to update active appointments when they change
+  useEffect(() => {
+    console.log('DashboardPage: Active appointments updated:', activeAppointments.length)
+    console.log('DashboardPage: Active appointments details:', activeAppointments.map((apt, index) => ({
+      index: index + 1,
+      id: apt.id,
+      client: apt.clients?.full_name || apt.client_name,
+      service: apt.services?.name || apt.service_name,
+      time: formatTimeRange(apt),
+      duration: apt.duration
+    })))
+  }, [activeAppointments])
 
   // Get appointments needing attention
   const needsAttention = appointments.filter(apt => 
@@ -118,7 +174,6 @@ const DashboardPage = () => {
   )
 
   // Get today's KPIs
-  const today = new Date().toISOString().split('T')[0]
   const todayAppointments = appointments.filter(apt => 
     apt.appointment_date === today
   )
@@ -166,6 +221,85 @@ const DashboardPage = () => {
     }
   }
 
+  const formatTimeRange = (apt) => {
+    try {
+      const startStr = apt.date || apt.appointment_date
+      if (!startStr) return apt.appointment_time || '—'
+      const start = new Date(startStr)
+      const dur = Number.isFinite(apt.duration) ? apt.duration : 60
+      const end = new Date(start.getTime() + dur * 60 * 1000)
+      const fmt = (d) => d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }).toLowerCase()
+      return `${fmt(start)} - ${fmt(end)}`
+    } catch {
+      return apt.appointment_time || '—'
+    }
+  }
+
+  // Timer helpers
+  const timerKey = (id) => `salonx-timer-${id}`
+  const getTimer = (id) => {
+    try {
+      const raw = localStorage.getItem(timerKey(id))
+      if (!raw) return null
+      return JSON.parse(raw)
+    } catch { return null }
+  }
+  const startTimer = (apt, overrideMin) => {
+    const duration = Number.isFinite(overrideMin) ? overrideMin : (Number.isFinite(apt.duration) ? apt.duration : 60)
+    const payload = { start: Date.now(), durationMin: duration }
+    localStorage.setItem(timerKey(apt.id), JSON.stringify(payload))
+    setNow(Date.now())
+  }
+  const clearTimer = (id) => {
+    localStorage.removeItem(timerKey(id))
+    setNow(Date.now())
+  }
+  const getRemaining = (apt) => {
+    const t = getTimer(apt.id)
+    if (!t) return null
+    const end = t.start + t.durationMin * 60 * 1000
+    const remaining = end - now
+    return remaining
+  }
+  const fmtCountdown = (ms) => {
+    const s = Math.max(0, Math.floor(ms / 1000))
+    const mm = String(Math.floor(s / 60)).padStart(2, '0')
+    const ss = String(s % 60).padStart(2, '0')
+    return `${mm}:${ss}`
+  }
+
+  const totalMs = (apt) => {
+    const t = getTimer(apt.id)
+    const mins = t ? t.durationMin : (Number.isFinite(apt.duration) ? apt.duration : 60)
+    return mins * 60 * 1000
+  }
+
+  const TimerDial = ({ apt }) => {
+    const rem = getRemaining(apt)
+    const total = totalMs(apt)
+    const running = rem !== null && rem > 0
+    const ratio = running ? 1 - (rem / total) : 0
+    const angle = Math.max(0, Math.min(360, ratio * 360))
+    const label = running ? fmtCountdown(rem) : (Number.isFinite(apt.duration) ? `${apt.duration}` : '—')
+
+    return (
+      <div className="relative w-16 h-16">
+        {/* Progress arc */}
+        <div
+          className="absolute inset-0 rounded-full"
+          style={{
+            background: `conic-gradient(#f97316 ${angle}deg, rgba(255,255,255,0.08) 0deg)`
+          }}
+        />
+        {/* Inner face */}
+        <div className="absolute inset-1 rounded-full bg-black/70 border border-gray-600" />
+        {/* Center text */}
+        <div className="absolute inset-0 flex items-center justify-center text-white text-xs font-semibold">
+          {label}
+        </div>
+      </div>
+    )
+  }
 
 
   if (error) {
@@ -206,6 +340,7 @@ const DashboardPage = () => {
                 <Calendar className="w-4 h-4" />
                 <span>Calendar</span>
               </Link>
+
               <SignoutButton 
                 className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center space-x-2"
                 onSignoutComplete={() => {
@@ -221,38 +356,7 @@ const DashboardPage = () => {
       </header>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Branding Area */}
-        <div className="mb-8">
-          <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4">
-                {branding?.logo_url ? (
-                  <img 
-                    src={branding.logo_url} 
-                    alt="Brand Logo" 
-                    className="w-12 h-12 rounded-lg"
-                  />
-                ) : (
-                  <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-blue-500 rounded-lg flex items-center justify-center">
-                    <Star className="w-6 h-6 text-white" />
-                  </div>
-                )}
-                <div>
-                  <h2 className="text-xl font-bold text-white">
-                    {branding?.brand_name || 'SalonX'}
-                  </h2>
-                  <p className="text-gray-400">
-                    {branding?.tagline || 'Professional Salon Management'}
-                  </p>
-                </div>
-              </div>
-              <div className="text-right">
-                <div className="text-sm text-gray-400">Mode</div>
-                <div className="text-white font-semibold capitalize">{mode}</div>
-              </div>
-            </div>
-          </div>
-        </div>
+
 
         {/* KPI Section */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -308,84 +412,85 @@ const DashboardPage = () => {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Appointments Queue */}
-          <div className="bg-gray-800 rounded-lg border border-gray-700">
-            <div className="p-6 border-b border-gray-700">
+          {/* Appointments Queue - styled like mock */}
+          <div className="rounded-2xl border border-orange-500/60 bg-gradient-to-b from-gray-800 to-gray-900 overflow-hidden">
+            <div className="p-5 border-b border-gray-700/70">
               <h3 className="text-lg font-semibold text-white flex items-center">
-                <Clock className="w-5 h-5 mr-2 text-purple-400" />
-                Next Appointments
+                <Clock className="w-5 h-5 mr-2 text-orange-400" />
+                Today's Appointments ({activeAppointments.length})
               </h3>
             </div>
-            <div className="p-6">
+            <div className="p-5">
               {activeAppointments.length > 0 ? (
                 <div className="space-y-4">
-                  {activeAppointments.map((appointment) => (
-                    <div key={appointment.id} className="bg-gray-700 rounded-lg p-4">
-                      <div className="flex items-center justify-between mb-3">
-                        <div>
-                          <h4 className="font-semibold text-white">
-                            {appointment.client_name}
-                          </h4>
-                          <p className="text-sm text-gray-400">
-                            {appointment.service_name} • {appointment.appointment_time}
-                          </p>
+                  {activeAppointments.map((appointment, index) => (
+                    <div key={appointment.id} className="relative rounded-xl bg-black/30 border border-gray-700/60 p-4">
+                      {/* Serial Number */}
+                      <div className="absolute -top-3 -left-3 w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center text-white font-bold text-base border-3 border-gray-900 shadow-lg z-10">
+                        {index + 1}
+                      </div>
+                      {/* vertical divider/time area on right */}
+                      <div className="absolute right-24 top-4 bottom-4 w-px bg-gray-600/60" />
+                      <div className="flex items-center justify-between">
+                        {/* Left: client + service */}
+                        <div className="pr-4">
+                          <div className="flex items-center gap-2">
+                            <span className="text-orange-400 font-bold text-lg">#{index + 1}</span>
+                            <div className="text-white text-xl font-extrabold leading-tight">
+                              {appointment.clients?.full_name || appointment.client_name || 'Unknown Client'}
+                            </div>
+                          </div>
+                          <div className="text-gray-300 text-base">
+                            {appointment.services?.name || appointment.service_name || 'Unknown Service'}
+                          </div>
                         </div>
-                        <div className="flex items-center space-x-2">
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            appointment.status === 'scheduled' ? 'bg-blue-100 text-blue-800' :
-                            appointment.status === 'in_progress' ? 'bg-green-100 text-green-800' :
-                            appointment.status === 'parked' ? 'bg-yellow-100 text-yellow-800' :
-                            'bg-gray-100 text-gray-800'
-                          }`}>
-                            {appointment.status.replace('_', ' ')}
-                          </span>
+                        {/* Middle: time range */}
+                        <div className="text-gray-100 text-lg font-medium">{formatTimeRange(appointment)}</div>
+                        {/* Right: timer dial (duration minutes) */}
+                        <div className="ml-6 flex items-center justify-center">
+                          <TimerDial apt={appointment} />
                         </div>
                       </div>
-                      <div className="flex space-x-2">
-                        {appointment.status === 'scheduled' && (
-                          <button
-                            onClick={() => handleAppointmentAction(appointment.id, 'start')}
-                            className="flex-1 bg-green-600 text-white px-3 py-2 rounded text-sm hover:bg-green-700 transition-colors flex items-center justify-center"
-                          >
-                            <Play className="w-4 h-4 mr-1" />
-                            Start
-                          </button>
-                        )}
-                        {appointment.status === 'in_progress' && (
-                          <>
-                            <button
-                              onClick={() => handleAppointmentAction(appointment.id, 'park')}
-                              className="flex-1 bg-yellow-600 text-white px-3 py-2 rounded text-sm hover:bg-yellow-700 transition-colors flex items-center justify-center"
-                            >
-                              <Pause className="w-4 h-4 mr-1" />
-                              Park
-                            </button>
-                            <button
-                              onClick={() => handleAppointmentAction(appointment.id, 'complete')}
-                              className="flex-1 bg-green-600 text-white px-3 py-2 rounded text-sm hover:bg-green-700 transition-colors flex items-center justify-center"
-                            >
-                              <CheckCircle className="w-4 h-4 mr-1" />
-                              Complete
-                            </button>
-                          </>
-                        )}
-                        {appointment.status === 'parked' && (
-                          <button
-                            onClick={() => handleAppointmentAction(appointment.id, 'unpark')}
-                            className="flex-1 bg-blue-600 text-white px-3 py-2 rounded text-sm hover:bg-blue-700 transition-colors flex items-center justify-center"
-                          >
-                            <Play className="w-4 h-4 mr-1" />
-                            Resume
-                          </button>
-                        )}
+                      {/* Timer controls */}
+                      <div className="mt-3 flex items-center justify-end text-sm">
+                        {(() => {
+                          const rem = getRemaining(appointment)
+                          if (rem === null) {
+                            return (
+                              <button onClick={() => setConfirmTimerApt(appointment)} className="text-gray-300 hover:text-white transition-colors">
+                                set timer
+                              </button>
+                            )
+                          }
+                          if (rem > 0) {
+                            return null
+                          }
+                          return (
+                            <div className="flex items-center gap-3">
+                              <span className="text-green-400 font-semibold">Time's up</span>
+                              <button
+                                onClick={async () => {
+                                  try {
+                                    await handleAppointmentAction(appointment.id, 'complete')
+                                    clearTimer(appointment.id)
+                                    setReviewApt(appointment)
+                                  } catch (e) { /* noop */ }
+                                }}
+                                className="px-3 py-1.5 rounded bg-green-600 hover:bg-green-700 text-white"
+                              >Complete & Review</button>
+                            </div>
+                          )
+                        })()}
                       </div>
+                      {/* orange timeline dot */}
+                      <div className="absolute left-1/2 -translate-x-1/2 -bottom-2 w-4 h-4 bg-orange-500 rounded-full border-2 border-gray-900 shadow" />
                     </div>
                   ))}
                 </div>
               ) : (
                 <div className="text-center py-8">
                   <Clock className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-400">No active appointments</p>
+                  <p className="text-gray-400">No appointments scheduled for today</p>
                 </div>
               )}
             </div>
@@ -407,10 +512,10 @@ const DashboardPage = () => {
                       <div className="flex items-center justify-between mb-3">
                         <div>
                           <h4 className="font-semibold text-white">
-                            {item.client_name}
+                            {item.clients?.full_name || item.client_name || 'Unknown Client'}
                           </h4>
                           <p className="text-sm text-gray-400">
-                            {item.service_name} • {item.wait_time} min wait
+                            {item.services?.name || item.service_name || 'Unknown Service'} • {item.wait_time} min wait
                           </p>
                         </div>
                         <button
@@ -511,8 +616,82 @@ const DashboardPage = () => {
           </div>
         </div>
       </div>
+
+      {/* Review Modal */}
+      {reviewApt && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+          <div className="bg-gray-800 border border-gray-700 rounded-2xl p-6 w-full max-w-md">
+            <div className="text-lg font-semibold text-white mb-2">Review Appointment</div>
+            <div className="text-gray-300 mb-4">
+              {reviewApt.clients?.full_name || reviewApt.client_name || 'Unknown Client'} • {reviewApt.services?.name || reviewApt.service_name || 'Unknown Service'}
+            </div>
+            <div className="mb-4">
+              <label className="block text-sm text-gray-400 mb-1">Rating</label>
+              <select value={reviewRating} onChange={(e)=>setReviewRating(parseInt(e.target.value))} className="w-full bg-gray-700 border border-gray-600 rounded p-2 text-white">
+                {[5,4,3,2,1].map(v=> <option key={v} value={v}>{v} / 5</option>)}
+              </select>
+            </div>
+            <div className="mb-6">
+              <label className="block text-sm text-gray-400 mb-1">Comments</label>
+              <textarea rows={4} value={reviewText} onChange={(e)=>setReviewText(e.target.value)} className="w-full bg-gray-700 border border-gray-600 rounded p-2 text-white" placeholder="How did it go?" />
+            </div>
+            <div className="flex items-center justify-end gap-3">
+              <button onClick={()=>setReviewApt(null)} className="px-3 py-2 rounded bg-gray-700 text-gray-200">Cancel</button>
+              <button onClick={async ()=>{
+                try {
+                  await dispatch(createReview({
+                    appointmentId: reviewApt.id,
+                    rating: reviewRating,
+                    comment: reviewText,
+                    clientId: reviewApt.client_id,
+                    stylistId: reviewApt.stylist_id
+                  })).unwrap()
+                } catch(e) {}
+                setReviewApt(null)
+                setReviewText('')
+                // ensure list updates and jump to calendar
+                dispatch(fetchAppointments())
+                navigate('/calendar')
+              }} className="px-3 py-2 rounded bg-purple-600 hover:bg-purple-700 text-white">Save Review</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirm Start Timer Modal */}
+      {confirmTimerApt && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+          <div className="bg-gray-800 border border-gray-700 rounded-2xl p-6 w-full max-w-md">
+            <div className="text-lg font-semibold text-white mb-2">Start Timer?</div>
+            <div className="text-gray-300 mb-4">
+              Set duration and start timer for{' '}
+              <span className="text-white font-semibold">
+                {confirmTimerApt.clients?.full_name || confirmTimerApt.client_name || 'Unknown Client'}
+              </span> · {confirmTimerApt.services?.name || confirmTimerApt.service_name || 'Unknown Service'}
+            </div>
+            <div className="mb-4">
+              <label className="block text-sm text-gray-400 mb-1">Duration (minutes)</label>
+              <input
+                type="number"
+                min={1}
+                step={1}
+                value={timerMinutes}
+                onChange={(e)=>setTimerMinutes(e.target.value)}
+                onKeyDown={(e)=>{ if(e.key==='Enter' && Number(timerMinutes)>0){ startTimer(confirmTimerApt, parseInt(timerMinutes,10)); setConfirmTimerApt(null); setTimerMinutes('') } }}
+                placeholder="e.g., 45"
+                className="w-full bg-gray-700 border border-gray-600 rounded p-2 text-white"
+              />
+            </div>
+            <div className="flex items-center justify-end gap-3">
+              <button onClick={()=>setConfirmTimerApt(null)} className="px-3 py-2 rounded bg-gray-700 text-gray-200">Cancel</button>
+              <button disabled={!Number(timerMinutes)} onClick={()=>{ startTimer(confirmTimerApt, parseInt(timerMinutes,10)); setConfirmTimerApt(null); setTimerMinutes('') }} className="px-3 py-2 rounded bg-orange-600 hover:bg-orange-700 text-white disabled:opacity-50 disabled:cursor-not-allowed">Start Timer</button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   )
 }
 
-export default DashboardPage 
+export default DashboardPage

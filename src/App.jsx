@@ -16,6 +16,7 @@ import ClientProfile from './pages/ClientProfile'
 import NotFound from './pages/NotFound'
 import TestPage from './pages/TestPage'
 import DebugPage from './pages/DebugPage'
+import AppointmentDetails from './pages/AppointmentDetails'
 
 // Import components
 import LoadingSpinner from './components/shared/LoadingSpinner'
@@ -31,7 +32,7 @@ import { subscribeToAuthChanges } from './features/auth/realtime'
 import { subscribeToAppointments } from './features/appointments/realtime'
 import { subscribeToClients } from './features/clients/realtime'
 import { subscribeToServices } from './features/services/realtime'
-import { subscribeToBranding } from './features/branding/realtime'
+
 import { subscribeToPerformance } from './features/performance/realtime'
 import { subscribeToWaitlist } from './features/waitlist/realtime'
 import { subscribeToCalendarChanges } from './features/calendar/realtime'
@@ -162,7 +163,7 @@ function App() {
         subscribeToAppointments(dispatch, auth),
         subscribeToClients(dispatch, auth),
         subscribeToServices(dispatch, auth),
-        subscribeToBranding(dispatch, auth),
+
         subscribeToPerformance(dispatch, auth),
         subscribeToWaitlist(dispatch, auth),
         subscribeToCalendarChanges(dispatch, auth)
@@ -220,6 +221,11 @@ function App() {
         <Route path="/calendar" element={
           <AuthGuard>
             <Calendar />
+          </AuthGuard>
+        } />
+        <Route path="/appointments/:id" element={
+          <AuthGuard>
+            <AppointmentDetails />
           </AuthGuard>
         } />
         <Route path="/client/:id" element={

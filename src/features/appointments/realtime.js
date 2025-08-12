@@ -5,6 +5,12 @@ import { appointmentAdded, appointmentUpdated, appointmentDeleted } from './appo
 export const subscribeToAppointments = (dispatch, auth) => {
   const { profile } = auth
   
+  console.log('subscribeToAppointments: Setting up realtime subscription for:', {
+    mode: auth.mode,
+    brandId: auth.brandId,
+    profileId: profile?.id
+  })
+  
   // Build the subscription query based on user role and mode
   let query = supabase
     .channel('appointments')
@@ -28,10 +34,13 @@ export const subscribeToAppointments = (dispatch, auth) => {
           shouldProcess = newRecord?.stylist_id === profile.id || oldRecord?.stylist_id === profile.id
         }
         
-        if (!shouldProcess) return
+        if (!shouldProcess) {
+          console.log('subscribeToAppointments: Skipping update - not relevant to current user')
+          return
+        }
         
         // Log for debugging
-        console.log('Appointment realtime update:', {
+        console.log('subscribeToAppointments: Processing realtime update:', {
           eventType,
           appointmentId: newRecord?.id || oldRecord?.id,
           parked: newRecord?.parked,
@@ -46,20 +55,26 @@ export const subscribeToAppointments = (dispatch, auth) => {
         // Dispatch appropriate action based on event type
         switch (eventType) {
           case 'INSERT':
+            console.log('subscribeToAppointments: Dispatching appointmentAdded')
             dispatch(appointmentAdded(newRecord))
             break
           case 'UPDATE':
+            console.log('subscribeToAppointments: Dispatching appointmentUpdated')
             dispatch(appointmentUpdated(newRecord))
             break
           case 'DELETE':
+            console.log('subscribeToAppointments: Dispatching appointmentDeleted')
             dispatch(appointmentDeleted(oldRecord.id))
             break
           default:
+            console.log('subscribeToAppointments: Unknown event type:', eventType)
             break
         }
       }
     )
-    .subscribe()
+    .subscribe((status) => {
+      console.log('subscribeToAppointments: Subscription status:', status)
+    })
 
   return query
 }
@@ -67,6 +82,7 @@ export const subscribeToAppointments = (dispatch, auth) => {
 // Unsubscribe from appointments realtime
 export const unsubscribeFromAppointments = (subscription) => {
   if (subscription) {
+    console.log('unsubscribeFromAppointments: Unsubscribing from appointments')
     supabase.removeChannel(subscription)
   }
 } 

@@ -44,7 +44,7 @@ const CreateAppointmentForm = ({ onClose, selectedDate = null, appointment = nul
       }
     }
     
-    console.log('CreateAppointmentForm: Initial form data:', initialData)
+
     return initialData
   }
 
@@ -58,7 +58,7 @@ const CreateAppointmentForm = ({ onClose, selectedDate = null, appointment = nul
   const isFormValid = () => {
     // Don't allow submission while loading
     if (clientsLoading || servicesLoading) {
-      console.log('CreateAppointmentForm: Form not valid - data is loading')
+  
       return false
     }
     
@@ -71,47 +71,24 @@ const CreateAppointmentForm = ({ onClose, selectedDate = null, appointment = nul
       formData.price > 0
     )
     
-    console.log('CreateAppointmentForm: isFormValid check:', {
-      client_id: formData.client_id,
-      service_id: formData.service_id,
-      date: formData.date,
-      duration: formData.duration,
-      price: formData.price,
-      clientsLoading,
-      servicesLoading,
-      clientsCount: clients.length,
-      servicesCount: services.length,
-      isValid: isValid
-    })
+
     
     return isValid
   }
 
   // Fetch clients and services on component mount
   useEffect(() => {
-    console.log('CreateAppointmentForm: Component mounted, loading data...')
-    console.log('CreateAppointmentForm: Current clients count:', clients.length)
-    console.log('CreateAppointmentForm: Current services count:', services.length)
-    
     // Load data when component mounts
     const loadData = async () => {
       try {
         // Load clients if not already loaded
         if (clients.length === 0 && !clientsLoading) {
-          console.log('CreateAppointmentForm: Loading clients...')
           await dispatch(fetchClients()).unwrap()
-          console.log('CreateAppointmentForm: Clients loaded successfully')
-        } else {
-          console.log('CreateAppointmentForm: Clients already loaded, skipping fetch')
         }
         
         // Load services if not already loaded
         if (services.length === 0 && !servicesLoading) {
-          console.log('CreateAppointmentForm: Loading services...')
           await dispatch(fetchServices()).unwrap()
-          console.log('CreateAppointmentForm: Services loaded successfully')
-        } else {
-          console.log('CreateAppointmentForm: Services already loaded, skipping fetch')
         }
       } catch (error) {
         console.error('CreateAppointmentForm: Error loading data:', error)
@@ -121,61 +98,31 @@ const CreateAppointmentForm = ({ onClose, selectedDate = null, appointment = nul
     loadData()
   }, [dispatch])
 
-  // Debug effect to monitor loading states
-  useEffect(() => {
-    console.log('CreateAppointmentForm: Loading states changed:', {
-      clientsLoading,
-      servicesLoading,
-      clientsCount: clients.length,
-      servicesCount: services.length,
-      formValid: isFormValid(),
-      timestamp: new Date().toISOString()
-    })
-  }, [clientsLoading, servicesLoading, clients.length, services.length])
 
-  // Temporary fix: Reset loading states if they get stuck
-  useEffect(() => {
-    const timeout = setTimeout(() => {
-      if (clientsLoading && clients.length > 0) {
-        console.log('CreateAppointmentForm: Clients loading stuck, resetting...')
-        dispatch(resetClientsLoading())
-      }
-      if (servicesLoading && services.length > 0) {
-        console.log('CreateAppointmentForm: Services loading stuck, resetting...')
-        dispatch(resetServicesLoading())
-      }
-    }, 5000) // 5 second timeout
 
-    return () => clearTimeout(timeout)
-  }, [clientsLoading, servicesLoading, clients.length, services.length, dispatch])
-
-  // Immediate fix: Reset loading states if data is available but loading is still true
+  // Reset loading states if data is available but loading is still true
   useEffect(() => {
     if (clientsLoading && clients.length > 0) {
-      console.log('CreateAppointmentForm: Clients data available but loading still true, resetting...')
       dispatch(resetClientsLoading())
     }
     if (servicesLoading && services.length > 0) {
-      console.log('CreateAppointmentForm: Services data available but loading still true, resetting...')
       dispatch(resetServicesLoading())
     }
   }, [clientsLoading, servicesLoading, clients.length, services.length, dispatch])
 
-  // Additional debug effect to monitor Redux state
+  // Force reset loading states after a timeout
   useEffect(() => {
-    console.log('CreateAppointmentForm: Redux state check:', {
-      clientsState: {
-        isLoading: clientsLoading,
-        count: clients.length,
-        hasData: clients.length > 0
-      },
-      servicesState: {
-        isLoading: servicesLoading,
-        count: services.length,
-        hasData: services.length > 0
+    const timeout = setTimeout(() => {
+      if (clientsLoading) {
+        dispatch(resetClientsLoading())
       }
-    })
-  }, [clientsLoading, servicesLoading, clients, services])
+      if (servicesLoading) {
+        dispatch(resetServicesLoading())
+      }
+    }, 3000) // 3 second timeout
+
+    return () => clearTimeout(timeout)
+  }, [clientsLoading, servicesLoading, dispatch])
 
   // Set selected client and service when editing
   useEffect(() => {
@@ -185,12 +132,10 @@ const CreateAppointmentForm = ({ onClose, selectedDate = null, appointment = nul
       
       if (client) {
         setSelectedClient(client)
-        console.log('CreateAppointmentForm: Set selected client:', client)
       }
       
       if (service) {
         setSelectedService(service)
-        console.log('CreateAppointmentForm: Set selected service:', service)
       }
     }
   }, [isEditing, appointment, clients, services])
@@ -238,7 +183,7 @@ const CreateAppointmentForm = ({ onClose, selectedDate = null, appointment = nul
       newErrors.service_id = 'Please select a service'
     }
 
-    console.log('CreateAppointmentForm: Validation errors:', newErrors)
+
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
@@ -281,7 +226,7 @@ const CreateAppointmentForm = ({ onClose, selectedDate = null, appointment = nul
   }
 
   const handleClientSelect = (client) => {
-    console.log('CreateAppointmentForm: Client selected:', client)
+
     setSelectedClient(client)
     setFormData(prev => ({
       ...prev,
@@ -297,7 +242,6 @@ const CreateAppointmentForm = ({ onClose, selectedDate = null, appointment = nul
   }
 
   const handleServiceSelect = (service) => {
-    console.log('CreateAppointmentForm: Service selected:', service)
     setSelectedService(service)
     setFormData(prev => ({
       ...prev,
@@ -548,40 +492,20 @@ const CreateAppointmentForm = ({ onClose, selectedDate = null, appointment = nul
             />
           </div>
 
-          {/* Debug Info (remove in production) */}
-          {process.env.NODE_ENV === 'development' && (
-            <div className="bg-gray-900 p-4 rounded-md text-xs text-gray-400">
-              <h4 className="font-medium mb-2">Debug Info:</h4>
-              <div className="space-y-1">
-                <div>Client ID: {formData.client_id || 'Not selected'}</div>
-                <div>Service ID: {formData.service_id || 'Not selected'}</div>
-                <div>Selected Client: {selectedClient?.full_name || 'None'}</div>
-                <div>Selected Service: {selectedService?.name || 'None'}</div>
-                <div>Form Valid: {isFormValid() ? 'Yes' : 'No'}</div>
-                <div>Clients Count: {clients.length}</div>
-                <div>Services Count: {services.length}</div>
-              </div>
-            </div>
-          )}
 
-          {/* Debug Info (Development Only) */}
-          {process.env.NODE_ENV === 'development' && (
-            <div className="bg-gray-800 p-4 rounded-lg border border-gray-600">
-              <h4 className="text-sm font-medium text-gray-300 mb-2">Debug Info:</h4>
-              <div className="text-xs text-gray-400 space-y-1">
-                <div>Clients Loading: {clientsLoading ? 'Yes' : 'No'}</div>
-                <div>Services Loading: {servicesLoading ? 'Yes' : 'No'}</div>
-                <div>Clients Count: {clients.length}</div>
-                <div>Services Count: {services.length}</div>
-                <div>Selected Client ID: {formData.client_id || 'None'}</div>
-                <div>Selected Service ID: {formData.service_id || 'None'}</div>
-                <div>Form Valid: {isFormValid() ? 'Yes' : 'No'}</div>
-              </div>
-            </div>
-          )}
 
           {/* Action Buttons */}
           <div className="flex justify-end space-x-4 pt-4 border-t border-gray-700">
+            <button
+              type="button"
+              onClick={() => {
+                dispatch(resetClientsLoading())
+                dispatch(resetServicesLoading())
+              }}
+              className="px-2 py-1 text-xs text-gray-400 bg-gray-800 rounded border border-gray-600 hover:bg-gray-700"
+            >
+              Reset Loading
+            </button>
             <button
               type="button"
               onClick={onClose}
@@ -591,12 +515,28 @@ const CreateAppointmentForm = ({ onClose, selectedDate = null, appointment = nul
             </button>
             <button
               type="submit"
-              disabled={isLoading || !isFormValid() || clientsLoading || servicesLoading}
-              className="px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-md hover:from-purple-700 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              disabled={isLoading || !isFormValid()}
+              className="px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-md hover:from-purple-700 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center min-w-[140px]"
+              onClick={() => {
+                // Temporary debug
+                console.log('Button clicked - Loading states:', {
+                  isLoading,
+                  clientsLoading,
+                  servicesLoading,
+                  isFormValid: isFormValid(),
+                  clientsCount: clients.length,
+                  servicesCount: services.length
+                })
+              }}
             >
-              {isLoading ? (isEditing ? 'Updating...' : 'Creating...') : 
-               clientsLoading || servicesLoading ? 'Loading data...' :
-               (isEditing ? 'Update Appointment' : 'Create Appointment')}
+              {isLoading ? (
+                <div className="flex items-center">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  {isEditing ? 'Updating...' : 'Creating...'}
+                </div>
+              ) : (
+                isEditing ? 'Update Appointment' : 'Create Appointment'
+              )}
             </button>
           </div>
         </form>

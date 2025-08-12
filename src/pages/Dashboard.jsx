@@ -6,6 +6,7 @@ import { selectAppointments } from '../features/appointments/appointmentsSlice'
 import { selectClients } from '../features/clients/clientsSlice'
 import { selectServices } from '../features/services/servicesSlice'
 
+
 const Dashboard = () => {
   const profile = useSelector(selectProfile)
   const mode = useSelector(selectMode)
@@ -73,6 +74,8 @@ const Dashboard = () => {
   
   return (
     <div className="min-h-screen bg-gray-900 text-white">
+
+      
       {/* Top Slider */}
       <div className="px-4 py-2">
         <div className="w-full bg-gray-800 rounded-full h-2">

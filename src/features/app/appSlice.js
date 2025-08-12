@@ -2,7 +2,7 @@ import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
 import { fetchAppointments } from '../appointments/appointmentsSlice'
 import { fetchClients } from '../clients/clientsSlice'
 import { fetchServices } from '../services/servicesSlice'
-import { fetchBranding } from '../branding/brandingSlice'
+
 import { fetchPerformance } from '../performance/performanceSlice'
 import { fetchWaitlist } from '../waitlist/waitlistSlice'
 
@@ -57,10 +57,7 @@ export const fetchInitialData = createAsyncThunk(
           console.warn('fetchInitialData: fetchServices failed:', error)
           return { error: error.message || 'Failed to fetch services' }
         }),
-        dispatch(fetchBranding()).catch(error => {
-          console.warn('fetchInitialData: fetchBranding failed:', error)
-          return { error: error.message || 'Failed to fetch branding' }
-        }),
+
         dispatch(fetchPerformance()).catch(error => {
           console.warn('fetchInitialData: fetchPerformance failed:', error)
           return { error: error.message || 'Failed to fetch performance' }

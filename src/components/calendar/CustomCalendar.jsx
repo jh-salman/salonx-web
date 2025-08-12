@@ -39,7 +39,7 @@ const CustomCalendar = () => {
   const parkedAppointments = useSelector(selectParkedAppointments)
   const profile = useSelector(selectProfile)
   
-  const [currentDate, setCurrentDate] = useState(new Date())
+  const [currentDate, setCurrentDate] = useState(new Date('2025-08-06'))
   const [viewMode, setViewMode] = useState('week') // 'day', 'week', 'month'
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
@@ -67,31 +67,21 @@ const CustomCalendar = () => {
 
   // Get appointments for a specific date
   const getAppointmentsForDate = useCallback((date) => {
-    console.log('CustomCalendar: Getting appointments for date:', date.toDateString())
-    console.log('CustomCalendar: All appointments:', appointments)
-    
-    const allAppointments = appointments
-    console.log('CustomCalendar: All appointments:', allAppointments)
-    
-    const filteredAppointments = allAppointments.filter(apt => {
-      // Handle both date field formats
-      const dateField = apt.appointment_date || apt.date
-      if (!dateField) {
-        console.log('CustomCalendar: No date field found for appointment:', apt)
+    if (!appointments || appointments.length === 0) return []
+
+    const targetLocal = new Date(date)
+    const targetKey = targetLocal.toDateString()
+
+    return appointments.filter((apt) => {
+      const dateField = apt.date || apt.appointment_date
+      if (!dateField) return false
+      try {
+        const aptLocal = new Date(dateField)
+        return aptLocal.toDateString() === targetKey
+      } catch {
         return false
       }
-      
-      const aptDate = new Date(dateField)
-      // Compare only the date part, ignoring timezone
-      const aptDateString = aptDate.toISOString().split('T')[0]
-      const targetDateString = date.toISOString().split('T')[0]
-      const matches = aptDateString === targetDateString
-      console.log('CustomCalendar: Appointment:', apt.id, 'Date field:', dateField, 'Parsed date:', aptDateString, 'Target date:', targetDateString, 'Matches:', matches)
-      return matches
     })
-    
-    console.log('CustomCalendar: Filtered appointments for', date.toDateString(), ':', filteredAppointments.length)
-    return filteredAppointments
   }, [appointments])
 
   // Get time slots (8 AM to 8 PM)
@@ -103,6 +93,30 @@ const CustomCalendar = () => {
       }
     }
     return slots
+  }, [])
+
+  // Themed color styles for appointments
+  const colorThemes = [
+    { bg: 'bg-gradient-to-br from-fuchsia-600 to-purple-700', accent: 'bg-pink-400', accentText: 'text-pink-400' },
+    { bg: 'bg-gradient-to-br from-sky-600 to-blue-700', accent: 'bg-sky-400', accentText: 'text-sky-400' },
+    { bg: 'bg-gradient-to-br from-emerald-600 to-green-700', accent: 'bg-emerald-400', accentText: 'text-emerald-400' },
+    { bg: 'bg-gradient-to-br from-amber-600 to-orange-700', accent: 'bg-amber-400', accentText: 'text-amber-400' },
+    { bg: 'bg-gradient-to-br from-rose-600 to-pink-700', accent: 'bg-rose-400', accentText: 'text-rose-400' },
+    { bg: 'bg-gradient-to-br from-violet-600 to-indigo-700', accent: 'bg-violet-400', accentText: 'text-violet-400' },
+    { bg: 'bg-gradient-to-br from-cyan-600 to-teal-700', accent: 'bg-cyan-400', accentText: 'text-cyan-400' },
+    { bg: 'bg-gradient-to-br from-slate-600 to-gray-700', accent: 'bg-slate-400', accentText: 'text-slate-300' }
+  ]
+
+  const parkedTheme = { bg: 'bg-gradient-to-br from-yellow-500 to-amber-600', accent: 'bg-amber-300', accentText: 'text-amber-300' }
+
+  const getAppointmentTheme = useCallback((appointment) => {
+    if (appointment.parked) return parkedTheme
+
+    const idxSeed = typeof appointment.id === 'string'
+      ? Array.from(appointment.id).reduce((acc, ch) => (acc + ch.charCodeAt(0)) % 1024, 0)
+      : Number.isFinite(appointment.id) ? appointment.id : 0
+    const theme = colorThemes[idxSeed % colorThemes.length]
+    return theme || colorThemes[0]
   }, [])
 
   // Handle slot selection - show bottom sheet
@@ -312,6 +326,13 @@ const CustomCalendar = () => {
     setCurrentDate(new Date())
   }, [])
 
+  // Navigate to specific date (for debugging)
+  const navigateToDate = useCallback((dateString) => {
+    const targetDate = new Date(dateString)
+    setCurrentDate(targetDate)
+    console.log('CustomCalendar: Navigated to date:', targetDate.toDateString())
+  }, [])
+
   // Format time
   const formatTime = useCallback((dateString) => {
     return new Date(dateString).toLocaleTimeString('en-US', {
@@ -320,13 +341,86 @@ const CustomCalendar = () => {
     })
   }, [])
 
+  // Helpers to format time range
+  const formatAppointmentTime = useCallback((apt) => {
+    let start = null
+    if (apt.date) start = new Date(apt.date)
+    else if (apt.appointment_date) start = new Date(apt.appointment_date)
+
+    if (!start) return ''
+
+    const durationMin = Number.isFinite(apt.duration) ? apt.duration : 60
+    const end = new Date(start.getTime() + durationMin * 60 * 1000)
+
+    const fmt = (d) => d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+    return `${fmt(start)} - ${fmt(end)}`
+  }, [])
+
+  // Reusable appointment card
+  const renderAppointmentCard = useCallback((apt, compact = false) => {
+    const theme = getAppointmentTheme(apt)
+    const timeText = formatAppointmentTime(apt)
+
+    return (
+      <div
+        key={apt.id}
+        className={`relative ${compact ? 'p-2 text-xs' : 'p-3 text-sm'} mb-1 rounded-xl cursor-pointer shadow-lg ring-1 ring-white/10 overflow-hidden`}
+        onClick={(e) => {
+          e.stopPropagation()
+          setSelectedAppointment(apt)
+          setShowAppointmentDetails(true)
+        }}
+        style={{
+          // gradient with 60% opacity overlay
+          background: undefined,
+        }}
+      >
+        {/* gradient background with 60% opacity */}
+        <div className={`absolute inset-0 rounded-xl opacity-60 ${theme.bg} pointer-events-none z-0`}></div>
+        <div className={`absolute left-0 top-0 h-full ${compact ? 'w-1' : 'w-1.5'} rounded-l ${theme.accent} z-10`}></div>
+        <div className="relative z-10">
+          <div className={`truncate ${compact ? 'font-semibold' : 'font-bold text-[0.95rem]'} ${theme.accentText}`}>
+            {apt.clients?.full_name || apt.client_name || 'Unknown'}
+          </div>
+          <div className="truncate text-gray-300">
+            {apt.services?.name || apt.service_name || 'No service'}
+          </div>
+          {!!timeText && (
+            <div className={`flex items-center gap-1 ${compact ? 'text-[10px] mt-0.5' : 'text-xs mt-1'} ${theme.accentText}`}>
+              <Clock className={`${compact ? 'w-3 h-3' : 'w-3.5 h-3.5'}`} />
+              <span>{timeText}</span>
+            </div>
+          )}
+        </div>
+      </div>
+    )
+  }, [getAppointmentTheme, formatAppointmentTime, setSelectedAppointment, setShowAppointmentDetails])
+
+  // Slot sizing (week/day rows use min-h-16 => 64px for 30 minutes)
+  const SLOT_MINUTES = 30
+  const SLOT_PX = 64
+
+  const getAppointmentHeightPx = useCallback((apt) => {
+    const durationMin = Number.isFinite(apt?.duration) ? apt.duration : 60
+    const blocks = Math.max(1, durationMin / SLOT_MINUTES)
+    return Math.round(blocks * SLOT_PX)
+  }, [])
 
 
   // Add test button
   useEffect(() => {
-    console.log('CustomCalendar: Component mounted, appointments:', appointments)
-    console.log('CustomCalendar: Appointments length:', appointments?.length || 0)
+    console.log('CustomCalendar: Appointments received:', appointments)
+    console.log('CustomCalendar: Appointments count:', appointments?.length || 0)
+    if (appointments && appointments.length > 0) {
+      console.log('CustomCalendar: First appointment:', appointments[0])
+    }
   }, [appointments])
+
+  // Fetch appointments when component mounts
+  useEffect(() => {
+    console.log('CustomCalendar: Fetching appointments...')
+    dispatch(fetchAppointments())
+  }, [dispatch])
 
   // Render week view
   const renderWeekView = useCallback(() => {
@@ -336,14 +430,14 @@ const CustomCalendar = () => {
     return (
       <div className="flex flex-col h-full">
         {/* Header */}
-        <div className="grid grid-cols-8 border-b border-gray-200 bg-gray-50">
+        <div className="grid grid-cols-8 border-b border-gray-700 bg-gray-800">
           <div className="p-3 border-r border-gray-200"></div>
           {weekDays.map((day, index) => (
-            <div key={index} className="p-3 border-r border-gray-200 text-center">
-              <div className="text-sm font-medium text-gray-900">
+            <div key={index} className="p-3 border-r border-gray-700 text-center">
+              <div className="text-sm font-medium text-gray-100">
                 {day.toLocaleDateString('en-US', { weekday: 'short' })}
               </div>
-              <div className="text-lg font-semibold text-gray-900">
+              <div className="text-lg font-semibold text-gray-100">
                 {day.getDate()}
               </div>
             </div>
@@ -351,63 +445,61 @@ const CustomCalendar = () => {
         </div>
 
         {/* Time slots */}
-        <div className="flex-1 overflow-auto">
+        <div className="flex-1 overflow-auto bg-gray-900">
           {timeSlots.map((time, timeIndex) => (
             <div key={timeIndex} className="grid grid-cols-8 border-b border-gray-100 min-h-16">
-              <div className="p-2 border-r border-gray-200 text-xs text-gray-500 flex items-center justify-end pr-2">
+              <div className="p-2 border-r border-gray-700 text-xs text-gray-400 flex items-center justify-end pr-2">
                 {time}
               </div>
               {weekDays.map((day, dayIndex) => {
                 const dayAppointments = getAppointmentsForDate(day)
-                const timeAppointments = dayAppointments.filter(apt => {
-                  console.log('CustomCalendar: Week view - Checking appointment for time slot:', time, 'Appointment:', apt)
-                  // Handle both date and appointment_time fields
-                  let aptTime
+                const timeAppointments = dayAppointments.filter((apt) => {
+                  // Calculate local HH:mm for the appointment
+                  let hhmm
                   if (apt.appointment_time) {
-                    aptTime = apt.appointment_time
-                  } else if (apt.date) {
-                    const aptDate = new Date(apt.date)
-                    aptTime = aptDate.toLocaleTimeString('en-US', {
-                      hour: '2-digit',
-                      minute: '2-digit',
-                      hour12: false
-                    })
+                    hhmm = apt.appointment_time
                   } else {
-                    aptTime = formatTime(apt.appointment_date)
+                    const d = new Date(apt.date || apt.appointment_date)
+                    const hh = String(d.getHours()).padStart(2, '0')
+                    const mm = String(d.getMinutes()).padStart(2, '0')
+                    hhmm = `${hh}:${mm}`
                   }
-                  console.log('CustomCalendar: Week view - Appointment time:', aptTime, 'Slot time:', time, 'Matches:', aptTime === time)
-                  return aptTime === time
+                  return hhmm === time
                 })
 
                 return (
-                  <div 
-                    key={dayIndex} 
-                    className="p-1 border-r border-gray-200 relative hover:bg-gray-50 cursor-pointer"
+                  <div
+                    key={dayIndex}
+                    className="p-1 border-r border-gray-700 relative hover:bg-gray-800 cursor-pointer"
                     onClick={() => handleSlotClick(day, time)}
+                    style={{ position: 'relative' }}
                   >
-                    {timeAppointments.map((apt, aptIndex) => {
-                      console.log('CustomCalendar: Week view - Rendering appointment:', apt)
-                      return (
-                        <div
-                          key={apt.id}
-                          className={`p-1 mb-1 rounded text-xs text-white cursor-pointer ${
-                            apt.parked ? 'bg-yellow-500' : 'bg-blue-500'
-                          }`}
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            setSelectedAppointment(apt)
-                            setShowAppointmentDetails(true)
-                          }}
-                        >
-                          <div className="font-medium truncate">
-                            {apt.clients?.full_name || apt.client_name || 'Unknown'}
+                    {timeAppointments.map((apt, idx) => {
+                        const theme = getAppointmentTheme(apt)
+                        const heightPx = getAppointmentHeightPx(apt)
+                        return (
+                          <div
+                            key={apt.id}
+                            className={`absolute left-1 right-1 rounded text-xs text-white cursor-pointer shadow-sm ${theme.bg}`}
+                            style={{ height: heightPx, top: 2 + idx * 4 }}
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setSelectedAppointment(apt)
+                              setShowAppointmentDetails(true)
+                            }}
+                          >
+                            <div className={`absolute left-0 top-0 h-full w-1 rounded-l ${theme.accent}`}></div>
+                            <div className="p-2">
+                              <div className="font-semibold truncate drop-shadow-sm">
+                                {apt.clients?.full_name || apt.client_name || 'Unknown'}
+                              </div>
+                              <div className="text-[11px] opacity-90">
+                                {apt.services?.name || apt.service_name || 'No service'}
+                              </div>
+                            </div>
                           </div>
-                          <div className="text-xs opacity-90">
-                            {apt.services?.name || apt.service_name || 'No service'}
-                          </div>
-                        </div>
-                      )
-                    })}
+                        )
+                      })}
                   </div>
                 )
               })}
@@ -416,7 +508,7 @@ const CustomCalendar = () => {
         </div>
       </div>
     )
-  }, [getWeekDays, getTimeSlots, getAppointmentsForDate, formatTime, handleSlotClick])
+  }, [getWeekDays, getTimeSlots, getAppointmentsForDate, formatTime, handleSlotClick, getAppointmentTheme, renderAppointmentCard, getAppointmentHeightPx])
 
   // Render day view
   const renderDayView = useCallback(() => {
@@ -426,7 +518,7 @@ const CustomCalendar = () => {
     return (
       <div className="flex flex-col h-full">
         {/* Header */}
-        <div className="p-4 border-b border-gray-600 bg-gray-800">
+        <div className="p-4 border-b border-gray-700 bg-gray-800">
           <div className="text-lg font-semibold text-white">
             {currentDate.toLocaleDateString('en-US', {
               weekday: 'long',
@@ -440,84 +532,43 @@ const CustomCalendar = () => {
         {/* Time slots */}
         <div className="flex-1 overflow-auto bg-gray-900">
           {timeSlots.map((time, timeIndex) => {
-            const timeAppointments = dayAppointments.filter(apt => {
-              console.log('CustomCalendar: Checking appointment for time slot:', time, 'Appointment:', apt)
-              // Handle both date and appointment_time fields
-              let aptTime
+            const timeAppointments = dayAppointments.filter((apt) => {
+              let hhmm
               if (apt.appointment_time) {
-                aptTime = apt.appointment_time
+                hhmm = apt.appointment_time
               } else if (apt.date) {
-                const aptDate = new Date(apt.date)
-                aptTime = aptDate.toLocaleTimeString('en-US', {
-                  hour: '2-digit',
-                  minute: '2-digit',
-                  hour12: false
-                })
+                const d = new Date(apt.date)
+                const hh = String(d.getUTCHours()).padStart(2, '0')
+                const mm = String(d.getUTCMinutes()).padStart(2, '0')
+                hhmm = `${hh}:${mm}`
               } else if (apt.appointment_date) {
-                const aptDate = new Date(apt.appointment_date)
-                aptTime = aptDate.toLocaleTimeString('en-US', {
-                  hour: '2-digit',
-                  minute: '2-digit',
-                  hour12: false
-                })
+                const d = new Date(apt.appointment_date)
+                const hh = String(d.getUTCHours()).padStart(2, '0')
+                const mm = String(d.getUTCMinutes()).padStart(2, '0')
+                hhmm = `${hh}:${mm}`
               } else {
-                // Try to parse from any available date field
-                const dateField = apt.appointment_date || apt.date
-                if (dateField) {
-                  const aptDate = new Date(dateField)
-                  aptTime = aptDate.toLocaleTimeString('en-US', {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    hour12: false
-                  })
-                } else {
-                  aptTime = '00:00' // Default time if no date field found
-                }
+                hhmm = '00:00'
               }
-              console.log('CustomCalendar: Appointment time:', aptTime, 'Slot time:', time, 'Matches:', aptTime === time)
-              // Also check if appointment time is within 30 minutes of the slot
-              const timeMatch = aptTime === time
-              const timeDiff = Math.abs(parseInt(aptTime.split(':')[0]) - parseInt(time.split(':')[0])) * 60 + 
-                             Math.abs(parseInt(aptTime.split(':')[1]) - parseInt(time.split(':')[1]))
-              const within30Min = timeDiff <= 30
-              return timeMatch || within30Min
+
+              if (hhmm === time) return true
+              const [th, tm] = time.split(':').map((v) => parseInt(v, 10))
+              const [ah, am] = hhmm.split(':').map((v) => parseInt(v, 10))
+              const diff = Math.abs((ah * 60 + am) - (th * 60 + tm))
+              return diff <= 30
             })
 
             return (
               <div key={timeIndex} className="flex border-b border-gray-600 min-h-16">
-                <div className="w-20 p-2 text-xs text-gray-400 flex items-center justify-end pr-2 border-r border-gray-600">
+                <div className="w-20 p-2 text-xs text-gray-400 flex items-center justify-end pr-2 border-r border-gray-700">
                   {time}
                 </div>
-                <div 
-                  className="flex-1 p-1 hover:bg-gray-700 cursor-pointer"
+                <div
+                  className="flex-1 p-1 hover:bg-gray-800 cursor-pointer"
                   onClick={() => handleSlotClick(currentDate, time)}
                 >
-                  {timeAppointments.map((apt, aptIndex) => {
-                    console.log('CustomCalendar: Rendering appointment:', apt)
-                    return (
-                      <div
-                        key={apt.id}
-                        className={`p-2 mb-1 rounded text-sm text-white cursor-pointer ${
-                          apt.parked ? 'bg-yellow-500' : 'bg-blue-500'
-                        }`}
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          setSelectedAppointment(apt)
-                          setShowAppointmentDetails(true)
-                        }}
-                      >
-                        <div className="font-medium">
-                          {apt.clients?.full_name || apt.client_name || 'Unknown'}
-                        </div>
-                        <div className="text-xs opacity-90">
-                          {apt.services?.name || apt.service_name || 'No service'} • {apt.appointment_time || (apt.date ? new Date(apt.date).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }) : apt.appointment_date ? new Date(apt.appointment_date).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }) : 'No time')}
-                        </div>
-                        <div className="text-xs opacity-90">
-                          ${apt.price || 0} • {apt.duration || 60} min
-                        </div>
-                      </div>
-                    )
-                  })}
+                  {timeAppointments.map((apt) => (
+                    <div key={apt.id} style={{ height: getAppointmentHeightPx(apt) }}>{renderAppointmentCard(apt, false)}</div>
+                  ))}
                 </div>
               </div>
             )
@@ -525,7 +576,7 @@ const CustomCalendar = () => {
         </div>
       </div>
     )
-  }, [currentDate, getAppointmentsForDate, getTimeSlots, formatTime, handleSlotClick])
+  }, [currentDate, getAppointmentsForDate, getTimeSlots, formatTime, handleSlotClick, getAppointmentTheme, renderAppointmentCard, getAppointmentHeightPx])
 
   // Render month view
   const renderMonthView = useCallback(() => {
@@ -548,16 +599,16 @@ const CustomCalendar = () => {
     return (
       <div className="flex flex-col h-full">
         {/* Header */}
-        <div className="grid grid-cols-7 border-b border-gray-200 bg-gray-50">
+        <div className="grid grid-cols-7 border-b border-gray-700 bg-gray-800">
           {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
-            <div key={day} className="p-3 text-center text-sm font-medium text-gray-500">
+            <div key={day} className="p-3 text-center text-sm font-medium text-gray-300">
               {day}
             </div>
           ))}
         </div>
 
         {/* Calendar grid */}
-        <div className="flex-1 grid grid-cols-7">
+        <div className="flex-1 grid grid-cols-7 bg-gray-900">
           {days.map((day, index) => {
             const dayAppointments = getAppointmentsForDate(day)
             const isCurrentMonth = day.getMonth() === month
@@ -566,12 +617,12 @@ const CustomCalendar = () => {
             return (
               <div
                 key={index}
-                className={`min-h-32 p-2 border-r border-b border-gray-200 ${
-                  isToday ? 'bg-blue-50' : 'bg-white'
-                } ${!isCurrentMonth ? 'opacity-50' : ''}`}
+                className={`min-h-32 p-2 border-r border-b border-gray-700 ${
+                  isToday ? 'bg-gray-800' : 'bg-gray-900'
+                } ${!isCurrentMonth ? 'opacity-60' : ''}`}
               >
                 <div className={`text-sm font-medium mb-1 ${
-                  isToday ? 'text-blue-600' : 'text-gray-900'
+                  isToday ? 'text-blue-400' : 'text-gray-100'
                 }`}>
                   {day.getDate()}
                 </div>
@@ -581,7 +632,7 @@ const CustomCalendar = () => {
                     <div
                       key={apt.id}
                       className={`text-xs p-1 rounded cursor-pointer ${
-                        apt.parked ? 'bg-yellow-100 text-yellow-800' : 'bg-blue-100 text-blue-800'
+                        apt.parked ? 'bg-yellow-500/20 text-yellow-300' : 'bg-blue-500/20 text-blue-300'
                       }`}
                       onClick={() => {
                         setSelectedAppointment(apt)
@@ -609,12 +660,12 @@ const CustomCalendar = () => {
         </div>
       </div>
     )
-  }, [currentDate, getAppointmentsForDate, formatTime])
+  }, [currentDate, getAppointmentsForDate, formatTime, getAppointmentTheme])
 
   return (
     <div className="h-full flex flex-col">
       {/* Toolbar */}
-      <div className="flex items-center justify-between p-4 bg-white border-b border-gray-200">
+      <div className="flex items-center justify-between p-4 bg-gray-800 border-b border-gray-700">
         <div className="flex items-center space-x-4">
           <button
             onClick={navigateToPrevious}
@@ -671,10 +722,13 @@ const CustomCalendar = () => {
             Month
           </button>
         </div>
+        
+        {/* Color Legend */}
+        {/* Removed color legend as appointments now have unique colors */}
       </div>
 
       {/* Calendar View */}
-      <div className="flex-1 bg-white">
+      <div className="flex-1 bg-gray-900">
         {viewMode === 'day' && renderDayView()}
         {viewMode === 'week' && renderWeekView()}
         {viewMode === 'month' && renderMonthView()}
@@ -683,14 +737,14 @@ const CustomCalendar = () => {
       {/* Bottom Sheet Modal */}
       {showBottomSheet && bottomSheetData && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end z-50">
-          <div className="w-full bg-white rounded-t-2xl shadow-2xl transform transition-transform duration-300 ease-out">
+          <div className="w-full bg-gray-800 rounded-t-2xl shadow-2xl transform transition-transform duration-300 ease-out">
             {/* Header */}
-            <div className="flex items-center justify-between p-4 border-b border-gray-200">
+            <div className="flex items-center justify-between p-4 border-b border-gray-700">
               <div>
                 <div className="text-lg font-semibold text-gray-900">
                   {bottomSheetData.dateString}
                 </div>
-                <div className="text-sm text-gray-500">
+                <div className="text-sm text-gray-300">
                   {bottomSheetData.timeString}
                 </div>
               </div>
@@ -765,9 +819,9 @@ const CustomCalendar = () => {
       {/* Appointment Details Modal */}
       {showAppointmentDetails && selectedAppointment && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
-            <div className="flex items-center justify-between p-4 border-b">
-              <h2 className="text-lg font-semibold text-gray-900">Appointment Details</h2>
+          <div className="bg-gray-800 rounded-lg shadow-xl w-full max-w-md mx-4">
+            <div className="flex items-center justify-between p-4 border-b border-gray-700">
+              <h2 className="text-lg font-semibold text-gray-100">Appointment Details</h2>
               <button
                 onClick={() => setShowAppointmentDetails(false)}
                 className="text-gray-400 hover:text-gray-600"
@@ -776,7 +830,7 @@ const CustomCalendar = () => {
               </button>
             </div>
             
-            <div className="p-4 space-y-4">
+            <div className="p-4 space-y-4 text-gray-200">
               <div className="flex items-center space-x-3">
                 <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
                   <User className="w-5 h-5 text-blue-600" />
@@ -882,14 +936,14 @@ const CustomCalendar = () => {
       {/* Bottom Sheet Modal */}
       {showBottomSheet && bottomSheetData && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end z-50">
-          <div className="w-full bg-white rounded-t-2xl shadow-2xl transform transition-transform duration-300 ease-out">
+          <div className="w-full bg-gray-800 rounded-t-2xl shadow-2xl transform transition-transform duration-300 ease-out">
             {/* Header */}
-            <div className="flex items-center justify-between p-4 border-b border-gray-200">
+            <div className="flex items-center justify-between p-4 border-b border-gray-700">
               <div>
                 <div className="text-lg font-semibold text-gray-900">
                   {bottomSheetData.dateString}
                 </div>
-                <div className="text-sm text-gray-500">
+                <div className="text-sm text-gray-300">
                   {bottomSheetData.timeString}
                 </div>
               </div>
@@ -952,8 +1006,8 @@ const CustomCalendar = () => {
       {/* Confirm Modal */}
       {showConfirmModal && confirmAction && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
-            <div className="p-6">
+          <div className="bg-gray-800 rounded-lg shadow-xl w-full max-w-md mx-4">
+            <div className="p-6 text-gray-200">
               <div className="flex items-center space-x-3 mb-4">
                 <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
                   confirmAction.type === 'delete' ? 'bg-red-100' :

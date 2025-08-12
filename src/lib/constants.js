@@ -51,13 +51,7 @@ export const CALENDAR_VIEWS = {
   MONTH: 'month'
 }
 
-// Branding Sections
-export const BRANDING_SECTIONS = {
-  LOGO: 'logo',
-  COLORS: 'colors',
-  TYPOGRAPHY: 'typography',
-  SOCIAL_MEDIA: 'social_media'
-}
+
 
 // KPI Types
 export const KPI_TYPES = {

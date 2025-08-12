@@ -15,7 +15,8 @@ import {
   updateAppointment, 
   deleteAppointment, 
   parkAppointment, 
-  unparkAppointment 
+  unparkAppointment,
+  fetchAppointments
 } from '../../features/appointments/appointmentsSlice'
 import { getAppointmentColorClass } from '../../features/appointments/appointmentsSlice'
 
@@ -26,10 +27,12 @@ const AppointmentActions = ({ appointment, onEdit, className = '' }) => {
   const [showParkConfirm, setShowParkConfirm] = useState(false)
   const [showUnparkConfirm, setShowUnparkConfirm] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState(null)
 
   const appointmentColorClass = getAppointmentColorClass(appointment)
 
   const handleEdit = () => {
+    console.log('AppointmentActions: Edit clicked for appointment:', appointment.id)
     setShowActions(false)
     if (onEdit) {
       onEdit(appointment)
@@ -37,39 +40,54 @@ const AppointmentActions = ({ appointment, onEdit, className = '' }) => {
   }
 
   const handlePark = async () => {
+    console.log('AppointmentActions: Parking appointment:', appointment.id)
     setIsLoading(true)
+    setError(null)
     try {
-      await dispatch(parkAppointment(appointment.id)).unwrap()
+      const result = await dispatch(parkAppointment(appointment.id)).unwrap()
+      console.log('AppointmentActions: Park successful:', result)
       setShowParkConfirm(false)
       setShowActions(false)
+      // Note: No need to force refresh as realtime will handle the update
     } catch (error) {
-      console.error('Error parking appointment:', error)
+      console.error('AppointmentActions: Error parking appointment:', error)
+      setError(`Failed to park appointment: ${error}`)
     } finally {
       setIsLoading(false)
     }
   }
 
   const handleUnpark = async () => {
+    console.log('AppointmentActions: Unparking appointment:', appointment.id)
     setIsLoading(true)
+    setError(null)
     try {
-      await dispatch(unparkAppointment(appointment.id)).unwrap()
+      const result = await dispatch(unparkAppointment(appointment.id)).unwrap()
+      console.log('AppointmentActions: Unpark successful:', result)
       setShowUnparkConfirm(false)
       setShowActions(false)
+      // Note: No need to force refresh as realtime will handle the update
     } catch (error) {
-      console.error('Error unparking appointment:', error)
+      console.error('AppointmentActions: Error unparking appointment:', error)
+      setError(`Failed to unpark appointment: ${error}`)
     } finally {
       setIsLoading(false)
     }
   }
 
   const handleDelete = async () => {
+    console.log('AppointmentActions: Deleting appointment:', appointment.id)
     setIsLoading(true)
+    setError(null)
     try {
-      await dispatch(deleteAppointment(appointment.id)).unwrap()
+      const result = await dispatch(deleteAppointment(appointment.id)).unwrap()
+      console.log('AppointmentActions: Delete successful:', result)
       setShowDeleteConfirm(false)
       setShowActions(false)
+      // Note: No need to force refresh as realtime will handle the update
     } catch (error) {
-      console.error('Error deleting appointment:', error)
+      console.error('AppointmentActions: Error deleting appointment:', error)
+      setError(`Failed to delete appointment: ${error}`)
     } finally {
       setIsLoading(false)
     }
@@ -79,6 +97,19 @@ const AppointmentActions = ({ appointment, onEdit, className = '' }) => {
 
   return (
     <div className={`relative ${className}`}>
+      {/* Error Display */}
+      {error && (
+        <div className="absolute bottom-full right-0 mb-2 p-2 bg-red-600 text-white text-xs rounded z-50 max-w-xs">
+          {error}
+          <button 
+            onClick={() => setError(null)}
+            className="ml-2 text-white hover:text-gray-300"
+          >
+            ×
+          </button>
+        </div>
+      )}
+
       {/* Action Button */}
       <button
         onClick={() => setShowActions(!showActions)}
