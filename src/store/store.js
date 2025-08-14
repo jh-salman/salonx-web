@@ -15,6 +15,7 @@ import waitlistReducer from '../features/waitlist/waitlistSlice'
 import calendarReducer from '../features/calendar/calendarSlice'
 import alertsReducer from '../features/alerts/alertsSlice'
 import appReducer from '../features/app/appSlice'
+import themeReducer from '../features/theme/themeSlice'
 
 // Persist configuration
 const persistConfig = {
@@ -29,7 +30,8 @@ const persistConfig = {
     'reviews',
     'performance',
     'waitlist',
-    'calendar'
+    'calendar',
+    'theme'
   ],
   blacklist: ['alerts'] // Don't persist alerts
 }
@@ -46,7 +48,8 @@ const rootReducer = combineReducers({
   waitlist: waitlistReducer,
   calendar: calendarReducer,
   alerts: alertsReducer,
-  app: appReducer
+  app: appReducer,
+  theme: themeReducer
 })
 
 // Persisted reducer

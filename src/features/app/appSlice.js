@@ -42,11 +42,12 @@ export const fetchInitialData = createAsyncThunk(
         }
       }
       
+      console.log('fetchInitialData: Fetching all data in parallel...')
+      
       // Fetch all data in parallel with individual error handling
       const promises = [
         dispatch(fetchAppointments()).catch(error => {
           console.warn('fetchInitialData: fetchAppointments failed:', error)
-          // Don't throw, just return error object
           return { error: error.message || 'Failed to fetch appointments' }
         }),
         dispatch(fetchClients()).catch(error => {
@@ -57,7 +58,6 @@ export const fetchInitialData = createAsyncThunk(
           console.warn('fetchInitialData: fetchServices failed:', error)
           return { error: error.message || 'Failed to fetch services' }
         }),
-
         dispatch(fetchPerformance()).catch(error => {
           console.warn('fetchInitialData: fetchPerformance failed:', error)
           return { error: error.message || 'Failed to fetch performance' }
@@ -68,18 +68,28 @@ export const fetchInitialData = createAsyncThunk(
         })
       ]
       
-      // Wait for at least one promise to complete with a reasonable timeout
+      // Wait for all promises to complete with a reasonable timeout
       const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Data fetch timeout')), 3000)
+        setTimeout(() => reject(new Error('Data fetch timeout')), 10000)
       )
       
       try {
         const results = await Promise.race([
-          Promise.any(promises),
+          Promise.allSettled(promises),
           timeoutPromise
         ])
         
-        console.log('fetchInitialData: At least one data fetch completed')
+        console.log('fetchInitialData: All data fetch attempts completed')
+        
+        // Log results for debugging
+        results.forEach((result, index) => {
+          const dataTypes = ['appointments', 'clients', 'services', 'performance', 'waitlist']
+          if (result.status === 'fulfilled') {
+            console.log(`fetchInitialData: ${dataTypes[index]} loaded successfully`)
+          } else {
+            console.warn(`fetchInitialData: ${dataTypes[index]} failed:`, result.reason)
+          }
+        })
         
         // Mark as loaded even if some failed
         console.log('fetchInitialData: Marking data as loaded')

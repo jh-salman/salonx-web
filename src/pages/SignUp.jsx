@@ -3,6 +3,7 @@ import { useDispatch, useSelector } from 'react-redux'
 import { Link, useNavigate } from 'react-router-dom'
 import { signUp, selectIsLoading, selectError, clearError } from '../features/auth/authSlice'
 import { addError, addSuccess } from '../features/alerts/alertsSlice'
+import { selectCurrentTheme } from '../features/theme/themeSlice'
 import { Eye, EyeOff, Mail, Lock, User, Phone, Building } from 'lucide-react'
 import LoadingSpinner from '../components/shared/LoadingSpinner'
 import { APP_MODES, USER_ROLES } from '../lib/constants'
@@ -12,6 +13,7 @@ const SignUp = () => {
   const navigate = useNavigate()
   const isLoading = useSelector(selectIsLoading)
   const error = useSelector(selectError)
+  const currentTheme = useSelector(selectCurrentTheme)
 
   const [formData, setFormData] = useState({
     email: '',
@@ -128,7 +130,7 @@ const SignUp = () => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen flex items-center justify-center theme-bg py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
         <div>
           <div className="mx-auto h-12 w-12 bg-gradient-to-r from-purple-600 to-blue-600 rounded-lg flex items-center justify-center neon-purple">

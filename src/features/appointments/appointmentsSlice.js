@@ -459,14 +459,102 @@ const appointmentsSlice = createSlice({
     clearError: (state) => {
       state.error = null
     },
-    // Realtime updates
+    setLoading: (state, action) => {
+      state.isLoading = action.payload
+    },
+    resetLoadingState: (state) => {
+      state.isLoading = false
+      state.error = null
+    },
+    updateProfile: (state, action) => {
+      state.profile = { ...state.profile, ...action.payload }
+    },
+    // Optimistic updates for instant UI feedback
+    optimisticCreateAppointment: (state, action) => {
+      const appointment = action.payload
+      // Add to appointments array
+      state.appointments.push(appointment)
+      // Add to appropriate list based on parked status
+      if (!appointment.parked) {
+        state.activeAppointments.push(appointment)
+      } else {
+        state.parkedAppointments.push(appointment)
+      }
+    },
+    optimisticUpdateAppointment: (state, action) => {
+      const { id, updates } = action.payload
+      const index = state.appointments.findIndex(apt => apt.id === id)
+      
+      if (index !== -1) {
+        const updatedAppointment = { ...state.appointments[index], ...updates }
+        state.appointments[index] = updatedAppointment
+        
+        // Update in active/parked lists
+        const activeIndex = state.activeAppointments.findIndex(apt => apt.id === id)
+        const parkedIndex = state.parkedAppointments.findIndex(apt => apt.id === id)
+        
+        if (updatedAppointment.parked) {
+          // Move to parked list
+          if (activeIndex !== -1) {
+            state.activeAppointments.splice(activeIndex, 1)
+          }
+          if (parkedIndex === -1) {
+            state.parkedAppointments.push(updatedAppointment)
+          } else {
+            state.parkedAppointments[parkedIndex] = updatedAppointment
+          }
+        } else {
+          // Move to active list
+          if (parkedIndex !== -1) {
+            state.parkedAppointments.splice(parkedIndex, 1)
+          }
+          if (activeIndex === -1) {
+            state.activeAppointments.push(updatedAppointment)
+          } else {
+            state.activeAppointments[activeIndex] = updatedAppointment
+          }
+        }
+      }
+    },
+    optimisticDeleteAppointment: (state, action) => {
+      const appointmentId = action.payload
+      
+      // Remove from all arrays
+      state.appointments = state.appointments.filter(apt => apt.id !== appointmentId)
+      state.activeAppointments = state.activeAppointments.filter(apt => apt.id !== appointmentId)
+      state.parkedAppointments = state.parkedAppointments.filter(apt => apt.id !== appointmentId)
+      
+      // Clear selected appointment if it was deleted
+      if (state.selectedAppointment && state.selectedAppointment.id === appointmentId) {
+        state.selectedAppointment = null
+      }
+    },
+    // Cleanup temporary appointments
+    cleanupTemporaryAppointments: (state) => {
+      state.appointments = state.appointments.filter(apt => !apt.id || !apt.id.startsWith('temp_'))
+      state.activeAppointments = state.activeAppointments.filter(apt => !apt.id || !apt.id.startsWith('temp_'))
+      state.parkedAppointments = state.parkedAppointments.filter(apt => !apt.id || !apt.id.startsWith('temp_'))
+    },
+    // Realtime updates with conflict resolution
     appointmentAdded: (state, action) => {
       console.log('appointmentsSlice: appointmentAdded called with:', action.payload)
       const appointment = action.payload
       
-      // Check if appointment already exists
+      console.log('appointmentsSlice: Before adding - appointments count:', state.appointments.length)
+      console.log('appointmentsSlice: Before adding - active appointments count:', state.activeAppointments.length)
+      console.log('appointmentsSlice: Before adding - parked appointments count:', state.parkedAppointments.length)
+      
+      // Check if appointment already exists (including temporary appointments)
       const existingIndex = state.appointments.findIndex(apt => apt.id === appointment.id)
-      if (existingIndex === -1) {
+      const tempIndex = state.appointments.findIndex(apt => 
+        apt.id && apt.id.startsWith('temp_') && 
+        apt.date === appointment.date && 
+        apt.client_id === appointment.client_id &&
+        apt.service_id === appointment.service_id
+      )
+      
+      if (existingIndex === -1 && tempIndex === -1) {
+        // New appointment
         state.appointments.push(appointment)
         if (!appointment.parked) {
           state.activeAppointments.push(appointment)
@@ -474,14 +562,78 @@ const appointmentsSlice = createSlice({
           state.parkedAppointments.push(appointment)
         }
         console.log('appointmentsSlice: Appointment added to state')
+      } else if (tempIndex !== -1) {
+        // Replace temporary appointment with real one
+        console.log('appointmentsSlice: Replacing temporary appointment with real one')
+        state.appointments[tempIndex] = appointment
+        
+        // Update in active/parked lists
+        const activeIndex = state.activeAppointments.findIndex(apt => apt.id === state.appointments[tempIndex].id)
+        const parkedIndex = state.parkedAppointments.findIndex(apt => apt.id === state.appointments[tempIndex].id)
+        
+        if (appointment.parked) {
+          // Move to parked list
+          if (activeIndex !== -1) {
+            state.activeAppointments[activeIndex] = appointment
+          } else if (parkedIndex === -1) {
+            state.parkedAppointments.push(appointment)
+          } else {
+            state.parkedAppointments[parkedIndex] = appointment
+          }
+        } else {
+          // Move to active list
+          if (parkedIndex !== -1) {
+            state.parkedAppointments[parkedIndex] = appointment
+          } else if (activeIndex === -1) {
+            state.activeAppointments.push(appointment)
+          } else {
+            state.activeAppointments[activeIndex] = appointment
+          }
+        }
       } else {
+        // Update existing appointment with realtime data
         console.log('appointmentsSlice: Appointment already exists, updating instead')
         state.appointments[existingIndex] = appointment
+        
+        // Update in active/parked lists
+        const activeIndex = state.activeAppointments.findIndex(apt => apt.id === appointment.id)
+        const parkedIndex = state.parkedAppointments.findIndex(apt => apt.id === appointment.id)
+        
+        if (appointment.parked) {
+          // Move to parked list
+          if (activeIndex !== -1) {
+            state.activeAppointments.splice(activeIndex, 1)
+          }
+          if (parkedIndex === -1) {
+            state.parkedAppointments.push(appointment)
+          } else {
+            state.parkedAppointments[parkedIndex] = appointment
+          }
+        } else {
+          // Move to active list
+          if (parkedIndex !== -1) {
+            state.parkedAppointments.splice(parkedIndex, 1)
+          }
+          if (activeIndex === -1) {
+            state.activeAppointments.push(appointment)
+          } else {
+            state.activeAppointments[activeIndex] = appointment
+          }
+        }
       }
+      
+      console.log('appointmentsSlice: After adding - appointments count:', state.appointments.length)
+      console.log('appointmentsSlice: After adding - active appointments count:', state.activeAppointments.length)
+      console.log('appointmentsSlice: After adding - parked appointments count:', state.parkedAppointments.length)
     },
     appointmentUpdated: (state, action) => {
       console.log('appointmentsSlice: appointmentUpdated called with:', action.payload)
       const appointment = action.payload
+      
+      console.log('appointmentsSlice: Before updating - appointments count:', state.appointments.length)
+      console.log('appointmentsSlice: Before updating - active appointments count:', state.activeAppointments.length)
+      console.log('appointmentsSlice: Before updating - parked appointments count:', state.parkedAppointments.length)
+      
       const index = state.appointments.findIndex(apt => apt.id === appointment.id)
       
       if (index !== -1) {
@@ -522,10 +674,23 @@ const appointmentsSlice = createSlice({
           state.parkedAppointments.push(appointment)
         }
       }
+      
+      console.log('appointmentsSlice: After updating - appointments count:', state.appointments.length)
+      console.log('appointmentsSlice: After updating - active appointments count:', state.activeAppointments.length)
+      console.log('appointmentsSlice: After updating - parked appointments count:', state.parkedAppointments.length)
     },
     appointmentDeleted: (state, action) => {
       console.log('appointmentsSlice: appointmentDeleted called with ID:', action.payload)
       const appointmentId = action.payload
+      
+      console.log('appointmentsSlice: Before deletion - appointments count:', state.appointments.length)
+      console.log('appointmentsSlice: Before deletion - active appointments count:', state.activeAppointments.length)
+      console.log('appointmentsSlice: Before deletion - parked appointments count:', state.parkedAppointments.length)
+      
+      // Remove from all arrays
+      const originalAppointmentsLength = state.appointments.length
+      const originalActiveLength = state.activeAppointments.length
+      const originalParkedLength = state.parkedAppointments.length
       
       state.appointments = state.appointments.filter(apt => apt.id !== appointmentId)
       state.activeAppointments = state.activeAppointments.filter(apt => apt.id !== appointmentId)
@@ -536,7 +701,10 @@ const appointmentsSlice = createSlice({
         state.selectedAppointment = null
       }
       
-      console.log('appointmentsSlice: Appointment removed from state')
+      console.log('appointmentsSlice: After deletion - appointments count:', state.appointments.length, '(removed:', originalAppointmentsLength - state.appointments.length, ')')
+      console.log('appointmentsSlice: After deletion - active appointments count:', state.activeAppointments.length, '(removed:', originalActiveLength - state.activeAppointments.length, ')')
+      console.log('appointmentsSlice: After deletion - parked appointments count:', state.parkedAppointments.length, '(removed:', originalParkedLength - state.parkedAppointments.length, ')')
+      console.log('appointmentsSlice: Appointment removed from state successfully')
     }
   },
   extraReducers: (builder) => {
@@ -558,154 +726,84 @@ const appointmentsSlice = createSlice({
         state.error = action.payload
         console.error('appointmentsSlice: fetchAppointments.rejected -', action.payload)
       })
-      // Create Appointment
-      .addCase(createAppointment.pending, (state) => {
+      // Create Appointment - Use optimistic updates for instant UI feedback
+      .addCase(createAppointment.pending, (state, action) => {
         state.isLoading = true
         state.error = null
+        // Don't add optimistic update here - let the component handle it
       })
       .addCase(createAppointment.fulfilled, (state, action) => {
         state.isLoading = false
-        console.log('appointmentsSlice: createAppointment.fulfilled - adding appointment:', action.payload)
-        state.appointments.push(action.payload)
-        if (!action.payload.parked) {
-          state.activeAppointments.push(action.payload)
-        } else {
-          state.parkedAppointments.push(action.payload)
-        }
+        console.log('appointmentsSlice: createAppointment.fulfilled - appointment created, realtime will handle UI update:', action.payload)
+        // Realtime will handle the UI update, so we don't manually update state here
       })
       .addCase(createAppointment.rejected, (state, action) => {
         state.isLoading = false
         state.error = action.payload
         console.error('appointmentsSlice: createAppointment.rejected -', action.payload)
+        
+        // Remove any temporary appointments that failed to create
+        state.appointments = state.appointments.filter(apt => !apt.id || !apt.id.startsWith('temp_'))
+        state.activeAppointments = state.activeAppointments.filter(apt => !apt.id || !apt.id.startsWith('temp_'))
+        state.parkedAppointments = state.parkedAppointments.filter(apt => !apt.id || !apt.id.startsWith('temp_'))
       })
-      // Update Appointment
-      .addCase(updateAppointment.pending, (state) => {
+      // Update Appointment - Use optimistic updates for instant UI feedback
+      .addCase(updateAppointment.pending, (state, action) => {
         state.isLoading = true
         state.error = null
+        // Don't add optimistic update here - let the component handle it
       })
       .addCase(updateAppointment.fulfilled, (state, action) => {
         state.isLoading = false
-        console.log('appointmentsSlice: updateAppointment.fulfilled - updating appointment:', action.payload)
-        const index = state.appointments.findIndex(apt => apt.id === action.payload.id)
-        if (index !== -1) {
-          state.appointments[index] = action.payload
-          
-          // Update active/parked lists
-          const activeIndex = state.activeAppointments.findIndex(apt => apt.id === action.payload.id)
-          const parkedIndex = state.parkedAppointments.findIndex(apt => apt.id === action.payload.id)
-          
-          if (action.payload.parked) {
-            if (activeIndex !== -1) {
-              state.activeAppointments.splice(activeIndex, 1)
-            }
-            if (parkedIndex === -1) {
-              state.parkedAppointments.push(action.payload)
-            } else {
-              state.parkedAppointments[parkedIndex] = action.payload
-            }
-          } else {
-            if (parkedIndex !== -1) {
-              state.parkedAppointments.splice(parkedIndex, 1)
-            }
-            if (activeIndex === -1) {
-              state.activeAppointments.push(action.payload)
-            } else {
-              state.activeAppointments[activeIndex] = action.payload
-            }
-          }
-        }
+        console.log('appointmentsSlice: updateAppointment.fulfilled - appointment updated, realtime will handle UI update:', action.payload)
+        // Realtime will handle the UI update, so we don't manually update state here
       })
       .addCase(updateAppointment.rejected, (state, action) => {
         state.isLoading = false
         state.error = action.payload
         console.error('appointmentsSlice: updateAppointment.rejected -', action.payload)
       })
-      // Delete Appointment
-      .addCase(deleteAppointment.pending, (state) => {
+      // Delete Appointment - Use optimistic updates for instant UI feedback
+      .addCase(deleteAppointment.pending, (state, action) => {
         state.isLoading = true
         state.error = null
+        // Don't add optimistic update here - let the component handle it
       })
       .addCase(deleteAppointment.fulfilled, (state, action) => {
         state.isLoading = false
-        console.log('appointmentsSlice: deleteAppointment.fulfilled called with ID:', action.payload)
-        console.log('appointmentsSlice: Before deletion - appointments count:', state.appointments.length)
-        console.log('appointmentsSlice: Before deletion - active appointments count:', state.activeAppointments.length)
-        console.log('appointmentsSlice: Before deletion - parked appointments count:', state.parkedAppointments.length)
-        
-        // Remove from all arrays
-        state.appointments = state.appointments.filter(apt => apt.id !== action.payload)
-        state.activeAppointments = state.activeAppointments.filter(apt => apt.id !== action.payload)
-        state.parkedAppointments = state.parkedAppointments.filter(apt => apt.id !== action.payload)
-        
-        // Clear selected appointment if it was deleted
-        if (state.selectedAppointment && state.selectedAppointment.id === action.payload) {
-          state.selectedAppointment = null
-        }
-        
-        console.log('appointmentsSlice: After deletion - appointments count:', state.appointments.length)
-        console.log('appointmentsSlice: After deletion - active appointments count:', state.activeAppointments.length)
-        console.log('appointmentsSlice: After deletion - parked appointments count:', state.parkedAppointments.length)
+        console.log('appointmentsSlice: deleteAppointment.fulfilled - appointment deleted, realtime will handle UI update:', action.payload)
+        // Realtime will handle the UI update, so we don't manually update state here
       })
       .addCase(deleteAppointment.rejected, (state, action) => {
         state.isLoading = false
         state.error = action.payload
         console.error('appointmentsSlice: deleteAppointment.rejected -', action.payload)
       })
-      // Park/Unpark
-      .addCase(parkAppointment.pending, (state) => {
+      // Park/Unpark - Use optimistic updates for instant UI feedback
+      .addCase(parkAppointment.pending, (state, action) => {
         state.isLoading = true
         state.error = null
+        // Don't add optimistic update here - let the component handle it
       })
       .addCase(parkAppointment.fulfilled, (state, action) => {
         state.isLoading = false
-        console.log('appointmentsSlice: parkAppointment.fulfilled - parking appointment:', action.payload)
-        const index = state.appointments.findIndex(apt => apt.id === action.payload.id)
-        if (index !== -1) {
-          state.appointments[index] = action.payload
-          
-          // Move from active to parked
-          const activeIndex = state.activeAppointments.findIndex(apt => apt.id === action.payload.id)
-          if (activeIndex !== -1) {
-            state.activeAppointments.splice(activeIndex, 1)
-          }
-          
-          const parkedIndex = state.parkedAppointments.findIndex(apt => apt.id === action.payload.id)
-          if (parkedIndex === -1) {
-            state.parkedAppointments.push(action.payload)
-          } else {
-            state.parkedAppointments[parkedIndex] = action.payload
-          }
-        }
+        console.log('appointmentsSlice: parkAppointment.fulfilled - appointment parked, realtime will handle UI update:', action.payload)
+        // Realtime will handle the UI update, so we don't manually update state here
       })
       .addCase(parkAppointment.rejected, (state, action) => {
         state.isLoading = false
         state.error = action.payload
         console.error('appointmentsSlice: parkAppointment.rejected -', action.payload)
       })
-      .addCase(unparkAppointment.pending, (state) => {
+      .addCase(unparkAppointment.pending, (state, action) => {
         state.isLoading = true
         state.error = null
+        // Don't add optimistic update here - let the component handle it
       })
       .addCase(unparkAppointment.fulfilled, (state, action) => {
         state.isLoading = false
-        console.log('appointmentsSlice: unparkAppointment.fulfilled - unparking appointment:', action.payload)
-        const index = state.appointments.findIndex(apt => apt.id === action.payload.id)
-        if (index !== -1) {
-          state.appointments[index] = action.payload
-          
-          // Move from parked to active
-          const parkedIndex = state.parkedAppointments.findIndex(apt => apt.id === action.payload.id)
-          if (parkedIndex !== -1) {
-            state.parkedAppointments.splice(parkedIndex, 1)
-          }
-          
-          const activeIndex = state.activeAppointments.findIndex(apt => apt.id === action.payload.id)
-          if (activeIndex === -1) {
-            state.activeAppointments.push(action.payload)
-          } else {
-            state.activeAppointments[activeIndex] = action.payload
-          }
-        }
+        console.log('appointmentsSlice: unparkAppointment.fulfilled - appointment unparked, realtime will handle UI update:', action.payload)
+        // Realtime will handle the UI update, so we don't manually update state here
       })
       .addCase(unparkAppointment.rejected, (state, action) => {
         state.isLoading = false
@@ -721,6 +819,13 @@ export const {
   setFilters,
   clearFilters,
   clearError,
+  setLoading,
+  resetLoadingState,
+  updateProfile,
+  optimisticCreateAppointment,
+  optimisticUpdateAppointment,
+  optimisticDeleteAppointment,
+  cleanupTemporaryAppointments,
   appointmentAdded,
   appointmentUpdated,
   appointmentDeleted

@@ -4,6 +4,8 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import { selectIsAuthenticated, selectIsLoading, selectProfile, selectUser, checkAuth } from './features/auth/authSlice'
 import { selectIsInitialDataLoaded, selectIsDataLoading, fetchInitialData } from './features/app/appSlice'
 import { addError, addSuccess } from './features/alerts/alertsSlice'
+import { selectCurrentTheme } from './features/theme/themeSlice'
+import ThemeProvider from './components/shared/ThemeProvider'
 
 // Import pages
 import SignIn from './pages/SignIn'
@@ -67,6 +69,7 @@ function App() {
   const isInitialDataLoaded = useSelector(selectIsInitialDataLoaded) || false
   const isDataLoading = useSelector(selectIsDataLoading) || false
   const isFetching = useSelector(state => state.app.isFetching) || false
+  const currentTheme = useSelector(selectCurrentTheme)
   const [subscriptions, setSubscriptions] = useState([])
 
   // Debug logging
@@ -158,24 +161,58 @@ function App() {
       }
       
       // Subscribe to all realtime channels
-      const subs = [
-        subscribeToAuthChanges(dispatch),
-        subscribeToAppointments(dispatch, auth),
-        subscribeToClients(dispatch, auth),
-        subscribeToServices(dispatch, auth),
-
-        subscribeToPerformance(dispatch, auth),
-        subscribeToWaitlist(dispatch, auth),
-        subscribeToCalendarChanges(dispatch, auth)
-      ].filter(Boolean)
-
-      setSubscriptions(subs)
+      console.log('App: Setting up realtime subscriptions...')
+      const subs = []
+      
+      try {
+        // Auth changes subscription
+        const authSub = subscribeToAuthChanges(dispatch)
+        if (authSub) subs.push(authSub)
+        
+        // Appointments subscription
+        const appointmentsSub = subscribeToAppointments(dispatch, auth)
+        if (appointmentsSub) subs.push(appointmentsSub)
+        
+        // Clients subscription
+        const clientsSub = subscribeToClients(dispatch, auth)
+        if (clientsSub) subs.push(clientsSub)
+        
+        // Services subscription
+        const servicesSub = subscribeToServices(dispatch, auth)
+        if (servicesSub) subs.push(servicesSub)
+        
+        // Performance subscription
+        const performanceSub = subscribeToPerformance(dispatch, auth)
+        if (performanceSub) subs.push(performanceSub)
+        
+        // Waitlist subscription
+        const waitlistSub = subscribeToWaitlist(dispatch, auth)
+        if (waitlistSub) subs.push(waitlistSub)
+        
+        // Calendar subscription
+        const calendarSub = subscribeToCalendarChanges(dispatch, auth)
+        if (calendarSub) subs.push(calendarSub)
+        
+        console.log('App: Successfully set up', subs.length, 'realtime subscriptions')
+        setSubscriptions(subs)
+      } catch (error) {
+        console.error('App: Error setting up realtime subscriptions:', error)
+      }
 
       // Cleanup subscriptions on unmount
       return () => {
-        subs.forEach(sub => {
-          if (sub && typeof sub.unsubscribe === 'function') {
-            sub.unsubscribe()
+        console.log('App: Cleaning up realtime subscriptions')
+        subs.forEach((sub, index) => {
+          try {
+            if (sub && typeof sub.unsubscribe === 'function') {
+              console.log('App: Unsubscribing from channel', index)
+              sub.unsubscribe()
+            } else if (sub && typeof sub.removeChannel === 'function') {
+              console.log('App: Removing channel', index)
+              sub.removeChannel()
+            }
+          } catch (error) {
+            console.error('App: Error cleaning up subscription', index, ':', error)
           }
         })
       }
@@ -188,10 +225,11 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-900">
-      <AlertContainer />
-      
-      <Routes>
+    <ThemeProvider>
+      <div className={`min-h-screen theme-bg theme-text`}>
+        <AlertContainer />
+        
+        <Routes>
         {/* Public routes - always accessible */}
         <Route path="/signin" element={
           (safeIsAuthenticated && safeUser && safeProfile) ? <Navigate to="/dashboard" replace /> : <SignIn />
@@ -202,9 +240,9 @@ function App() {
         <Route path="/test" element={<TestPage />} />
         <Route path="/debug" element={<DebugPage />} />
         <Route path="/simple" element={
-          <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-            <div className="bg-gray-800 p-8 rounded-lg shadow-lg border border-gray-700">
-              <h1 className="text-2xl font-bold text-white mb-4">Simple Test</h1>
+          <div className="min-h-screen theme-bg flex items-center justify-center">
+            <div className="theme-bg p-8 rounded-lg shadow-lg border theme-border">
+              <h1 className="text-2xl font-bold theme-text mb-4">Simple Test</h1>
               <p className="text-green-400">✅ App is working!</p>
               <p className="text-gray-300">isAuthenticated: {safeIsAuthenticated ? 'true' : 'false'}</p>
               <p className="text-gray-300">isLoading: {isLoading.toString()}</p>
@@ -243,8 +281,9 @@ function App() {
         <Route path="*" element={
           (safeIsAuthenticated && safeUser && safeProfile) ? <NotFound /> : <Navigate to="/signin" replace />
         } />
-      </Routes>
-    </div>
+        </Routes>
+      </div>
+    </ThemeProvider>
   )
 }
 

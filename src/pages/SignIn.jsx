@@ -3,6 +3,7 @@ import { useDispatch, useSelector } from 'react-redux'
 import { Link, useNavigate } from 'react-router-dom'
 import { signIn, selectIsLoading, selectError, clearError } from '../features/auth/authSlice'
 import { addError, addSuccess } from '../features/alerts/alertsSlice'
+import { selectCurrentTheme } from '../features/theme/themeSlice'
 import { Eye, EyeOff, Mail, Lock } from 'lucide-react'
 import LoadingSpinner from '../components/shared/LoadingSpinner'
 
@@ -11,6 +12,7 @@ const SignIn = () => {
   const navigate = useNavigate()
   const isLoading = useSelector(selectIsLoading)
   const error = useSelector(selectError)
+  const currentTheme = useSelector(selectCurrentTheme)
 
   const [formData, setFormData] = useState({
     email: '',
@@ -108,20 +110,20 @@ const SignIn = () => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen flex items-center justify-center theme-bg py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
         <div>
-          <div className="mx-auto h-12 w-12 bg-gradient-to-r from-purple-600 to-blue-600 rounded-lg flex items-center justify-center neon-purple">
+          <div className={`mx-auto h-12 w-12 theme-gradient rounded-lg flex items-center justify-center`}>
             <span className="text-white text-xl font-bold">S</span>
           </div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-white">
+          <h2 className="mt-6 text-center text-3xl font-extrabold theme-text">
             Sign in to SalonX
           </h2>
           <p className="mt-2 text-center text-sm text-gray-300">
             Or{' '}
             <Link
               to="/signup"
-              className="font-medium text-purple-400 hover:text-purple-300"
+              className="font-medium theme-accent hover:text-purple-300"
             >
               create a new account
             </Link>
@@ -220,7 +222,7 @@ const SignIn = () => {
             <button
               type="submit"
               disabled={isLoading}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed neon-purple"
+              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white theme-gradient hover:theme-hover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoading ? (
                 <div className="flex items-center">

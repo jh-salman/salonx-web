@@ -5,6 +5,7 @@ import { selectProfile, selectMode } from '../features/auth/authSlice'
 import { selectAppointments, createAppointment } from '../features/appointments/appointmentsSlice'
 import { selectClients } from '../features/clients/clientsSlice'
 import { selectServices } from '../features/services/servicesSlice'
+import { selectCurrentTheme } from '../features/theme/themeSlice'
 import CustomCalendar from '../components/calendar/CustomCalendar'
 import SignoutButton from '../components/SignoutButton'
 import { Plus, Calendar as CalendarIcon, Clock, User, Scissors, LogOut } from 'lucide-react'
@@ -16,6 +17,7 @@ const Calendar = () => {
   const appointments = useSelector(selectAppointments)
   const clients = useSelector(selectClients)
   const services = useSelector(selectServices)
+  const currentTheme = useSelector(selectCurrentTheme)
   
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [selectedDate, setSelectedDate] = useState(null)
@@ -91,25 +93,25 @@ const Calendar = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-900">
+    <div className="min-h-screen theme-bg">
       {/* Header */}
-      <header className="bg-gray-800 shadow-lg border-b border-gray-700">
+      <header className="theme-bg shadow-lg border-b theme-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
               <div className="flex-shrink-0">
-                <h1 className="text-xl font-bold text-white">SalonX</h1>
+                <h1 className="text-xl font-bold theme-text">SalonX</h1>
               </div>
               <nav className="ml-10 flex space-x-8">
                 <Link
                   to="/dashboard"
-                  className="text-gray-300 hover:text-white px-1 pt-1 text-sm font-medium transition-colors"
+                  className="theme-text opacity-70 hover:opacity-100 px-1 pt-1 text-sm font-medium transition-colors"
                 >
                   Dashboard
                 </Link>
                 <Link
                   to="/calendar"
-                  className="text-purple-400 border-b-2 border-purple-400 px-1 pt-1 text-sm font-medium"
+                  className="theme-accent border-b-2 border-current px-1 pt-1 text-sm font-medium"
                 >
                   Calendar
                 </Link>
@@ -119,12 +121,12 @@ const Calendar = () => {
             <div className="flex items-center space-x-4">
               <button
                 onClick={() => setShowCreateModal(true)}
-                className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white px-4 py-2 rounded-lg font-medium flex items-center space-x-2 transition-all duration-200 neon-purple"
+                className="theme-gradient text-white px-4 py-2 rounded-lg font-medium flex items-center space-x-2 transition-all duration-200 theme-hover"
               >
                 <Plus className="w-4 h-4" />
                 <span>New Appointment</span>
               </button>
-              <div className="text-sm text-gray-300">
+              <div className="text-sm theme-text opacity-70">
                 <span className="font-medium">{profile?.full_name}</span>
               </div>
               <SignoutButton 
@@ -144,59 +146,59 @@ const Calendar = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
+          <div className="theme-card rounded-lg p-6 border theme-border">
             <div className="flex items-center">
               <div className="flex-shrink-0">
                 <CalendarIcon className="w-8 h-8 text-purple-400" />
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-400">Total Appointments</p>
-                <p className="text-2xl font-bold text-white">{appointments.length}</p>
+                <p className="text-sm font-medium theme-text opacity-70">Total Appointments</p>
+                <p className="text-2xl font-bold theme-text">{appointments.length}</p>
               </div>
             </div>
           </div>
           
-          <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
+          <div className="theme-card rounded-lg p-6 border theme-border">
             <div className="flex items-center">
               <div className="flex-shrink-0">
                 <Clock className="w-8 h-8 text-blue-400" />
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-400">Today's Appointments</p>
-                <p className="text-2xl font-bold text-white">
+                <p className="text-sm font-medium theme-text opacity-70">Today's Appointments</p>
+                <p className="text-2xl font-bold theme-text">
                   {appointments.filter(apt => apt.appointment_date === new Date().toISOString().split('T')[0]).length}
                 </p>
               </div>
             </div>
           </div>
           
-          <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
+          <div className="theme-card rounded-lg p-6 border theme-border">
             <div className="flex items-center">
               <div className="flex-shrink-0">
                 <User className="w-8 h-8 text-green-400" />
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-400">Total Clients</p>
-                <p className="text-2xl font-bold text-white">{clients.length}</p>
+                <p className="text-sm font-medium theme-text opacity-70">Total Clients</p>
+                <p className="text-2xl font-bold theme-text">{clients.length}</p>
               </div>
             </div>
           </div>
           
-          <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
+          <div className="theme-card rounded-lg p-6 border theme-border">
             <div className="flex items-center">
               <div className="flex-shrink-0">
                 <Scissors className="w-8 h-8 text-orange-400" />
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-400">Services</p>
-                <p className="text-2xl font-bold text-white">{services.length}</p>
+                <p className="text-sm font-medium theme-text opacity-70">Services</p>
+                <p className="text-2xl font-bold theme-text">{services.length}</p>
               </div>
             </div>
           </div>
         </div>
 
         {/* Calendar */}
-        <div className="bg-gray-800 rounded-lg shadow-lg border border-gray-700">
+        <div className="theme-card rounded-lg shadow-lg border theme-border">
           <CustomCalendar onDateSelect={handleDateSelect} />
         </div>
       </div>
@@ -204,12 +206,12 @@ const Calendar = () => {
       {/* Create Appointment Modal */}
       {showCreateModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-gray-800 rounded-lg p-6 w-full max-w-md mx-4 border border-gray-700">
+          <div className="theme-modal rounded-lg p-6 w-full max-w-md mx-4 border theme-border">
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-bold text-white">Create New Appointment</h2>
+              <h2 className="text-xl font-bold theme-text">Create New Appointment</h2>
               <button
                 onClick={() => setShowCreateModal(false)}
-                className="text-gray-400 hover:text-white transition-colors"
+                className="theme-text opacity-70 hover:opacity-100 transition-colors"
               >
                 ✕
               </button>
@@ -218,7 +220,7 @@ const Calendar = () => {
             <form onSubmit={handleCreateAppointment} className="space-y-4">
               {/* Date Selection */}
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <label className="block text-sm font-medium theme-text opacity-70 mb-2">
                   Date
                 </label>
                 <input
@@ -226,45 +228,45 @@ const Calendar = () => {
                   name="appointment_date"
                   value={formData.appointment_date}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:border-purple-500 focus:ring-1 focus:ring-purple-500"
+                  className="w-full px-3 py-2 theme-input border theme-border rounded-lg theme-text focus:border-purple-500 focus:ring-1 focus:ring-purple-500"
                   required
                 />
               </div>
 
               {/* Time Selection */}
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <label className="block text-sm font-medium theme-text opacity-70 mb-2">
                   Time
                 </label>
                 <select
                   name="appointment_time"
                   value={formData.appointment_time}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:border-purple-500 focus:ring-1 focus:ring-purple-500"
+                  className="w-full px-3 py-2 theme-input border theme-border rounded-lg theme-text focus:border-purple-500 focus:ring-1 focus:ring-purple-500"
                   required
                 >
-                  <option value="" className="bg-gray-700 text-white">Select time</option>
+                  <option value="" className="theme-input theme-text">Select time</option>
                   {timeSlots.map(time => (
-                    <option key={time} value={time} className="bg-gray-700 text-white">{time}</option>
+                    <option key={time} value={time} className="theme-input theme-text">{time}</option>
                   ))}
                 </select>
               </div>
 
               {/* Client Selection */}
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <label className="block text-sm font-medium theme-text opacity-70 mb-2">
                   Client
                 </label>
                 <select
                   name="client_id"
                   value={formData.client_id}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:border-purple-500 focus:ring-1 focus:ring-purple-500"
+                  className="w-full px-3 py-2 theme-input border theme-border rounded-lg theme-text focus:border-purple-500 focus:ring-1 focus:ring-purple-500"
                   required
                 >
-                  <option value="" className="bg-gray-700 text-white">Select client</option>
+                  <option value="" className="theme-input theme-text">Select client</option>
                   {clients.map(client => (
-                    <option key={client.id} value={client.id} className="bg-gray-700 text-white">
+                    <option key={client.id} value={client.id} className="theme-input theme-text">
                       {client.full_name}
                     </option>
                   ))}
@@ -273,19 +275,19 @@ const Calendar = () => {
 
               {/* Service Selection */}
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <label className="block text-sm font-medium theme-text opacity-70 mb-2">
                   Service
                 </label>
                 <select
                   name="service_id"
                   value={formData.service_id}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:border-purple-500 focus:ring-1 focus:ring-purple-500"
+                  className="w-full px-3 py-2 theme-input border theme-border rounded-lg theme-text focus:border-purple-500 focus:ring-1 focus:ring-purple-500"
                   required
                 >
-                  <option value="" className="bg-gray-700 text-white">Select service</option>
+                  <option value="" className="theme-input theme-text">Select service</option>
                   {services.map(service => (
-                    <option key={service.id} value={service.id} className="bg-gray-700 text-white">
+                    <option key={service.id} value={service.id} className="theme-input theme-text">
                       {service.name} - ${service.price}
                     </option>
                   ))}
@@ -294,7 +296,7 @@ const Calendar = () => {
 
               {/* Notes */}
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <label className="block text-sm font-medium theme-text opacity-70 mb-2">
                   Notes
                 </label>
                 <textarea
@@ -302,7 +304,7 @@ const Calendar = () => {
                   value={formData.notes}
                   onChange={handleInputChange}
                   rows="3"
-                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:border-purple-500 focus:ring-1 focus:ring-purple-500"
+                  className="w-full px-3 py-2 theme-input border theme-border rounded-lg theme-text focus:border-purple-500 focus:ring-1 focus:ring-purple-500"
                   placeholder="Any special notes..."
                 />
               </div>
@@ -312,13 +314,13 @@ const Calendar = () => {
                 <button
                   type="button"
                   onClick={() => setShowCreateModal(false)}
-                  className="flex-1 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-500 transition-colors"
+                  className="flex-1 px-4 py-2 theme-card border theme-border theme-text rounded-lg hover:opacity-80 transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 transition-colors"
+                  className="flex-1 px-4 py-2 theme-gradient text-white rounded-lg theme-hover transition-colors"
                 >
                   Create Appointment
                 </button>
@@ -327,6 +329,7 @@ const Calendar = () => {
           </div>
         </div>
       )}
+      
     </div>
   )
 }

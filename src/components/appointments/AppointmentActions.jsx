@@ -113,20 +113,25 @@ const AppointmentActions = ({ appointment, onEdit, className = '' }) => {
       {/* Action Button */}
       <button
         onClick={() => setShowActions(!showActions)}
-        className={`p-2 rounded-full hover:bg-gray-700 transition-colors ${appointmentColorClass}`}
+        className={`p-2 rounded-full hover:opacity-80 transition-colors ${appointmentColorClass}`}
         disabled={isLoading}
       >
-        <MoreVertical className="w-4 h-4 text-white" />
+        {isLoading ? (
+          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+        ) : (
+          <MoreVertical className="w-4 h-4 text-white" />
+        )}
       </button>
 
       {/* Actions Dropdown */}
       {showActions && (
-        <div className="absolute right-0 top-full mt-2 w-48 bg-gray-800 border border-gray-700 rounded-lg shadow-lg z-50">
+        <div className="absolute right-0 top-full mt-2 w-48 theme-modal border theme-border rounded-lg shadow-lg z-50">
           <div className="py-2">
             {/* Edit Action */}
             <button
               onClick={handleEdit}
-              className="w-full px-4 py-2 text-left text-gray-300 hover:bg-gray-700 flex items-center space-x-2"
+              className="w-full px-4 py-2 text-left theme-text hover:opacity-80 flex items-center space-x-2"
+              disabled={isLoading}
             >
               <Edit className="w-4 h-4" />
               <span>Edit</span>
@@ -136,7 +141,8 @@ const AppointmentActions = ({ appointment, onEdit, className = '' }) => {
             {isParked ? (
               <button
                 onClick={() => setShowUnparkConfirm(true)}
-                className="w-full px-4 py-2 text-left text-gray-300 hover:bg-gray-700 flex items-center space-x-2"
+                className="w-full px-4 py-2 text-left theme-text hover:opacity-80 flex items-center space-x-2"
+                disabled={isLoading}
               >
                 <Play className="w-4 h-4" />
                 <span>Unpark</span>
@@ -144,7 +150,8 @@ const AppointmentActions = ({ appointment, onEdit, className = '' }) => {
             ) : (
               <button
                 onClick={() => setShowParkConfirm(true)}
-                className="w-full px-4 py-2 text-left text-gray-300 hover:bg-gray-700 flex items-center space-x-2"
+                className="w-full px-4 py-2 text-left theme-text hover:opacity-80 flex items-center space-x-2"
+                disabled={isLoading}
               >
                 <Park className="w-4 h-4" />
                 <span>Park</span>
@@ -154,7 +161,8 @@ const AppointmentActions = ({ appointment, onEdit, className = '' }) => {
             {/* Delete Action */}
             <button
               onClick={() => setShowDeleteConfirm(true)}
-              className="w-full px-4 py-2 text-left text-red-400 hover:bg-gray-700 flex items-center space-x-2"
+              className="w-full px-4 py-2 text-left text-red-400 hover:opacity-80 flex items-center space-x-2"
+              disabled={isLoading}
             >
               <Trash2 className="w-4 h-4" />
               <span>Delete</span>
@@ -166,15 +174,15 @@ const AppointmentActions = ({ appointment, onEdit, className = '' }) => {
       {/* Delete Confirmation Modal */}
       {showDeleteConfirm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-gray-800 p-6 rounded-lg max-w-md w-full mx-4">
-            <h3 className="text-lg font-semibold text-white mb-4">Delete Appointment</h3>
-            <p className="text-gray-300 mb-6">
+          <div className="theme-modal p-6 rounded-lg max-w-md w-full mx-4">
+            <h3 className="text-lg font-semibold theme-text mb-4">Delete Appointment</h3>
+            <p className="theme-text opacity-70 mb-6">
               Are you sure you want to delete this appointment? This action cannot be undone.
             </p>
             <div className="flex space-x-3">
               <button
                 onClick={() => setShowDeleteConfirm(false)}
-                className="flex-1 px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700"
+                className="flex-1 px-4 py-2 theme-border border theme-text rounded hover:opacity-80"
                 disabled={isLoading}
               >
                 Cancel
@@ -184,7 +192,14 @@ const AppointmentActions = ({ appointment, onEdit, className = '' }) => {
                 className="flex-1 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
                 disabled={isLoading}
               >
-                {isLoading ? 'Deleting...' : 'Delete'}
+                {isLoading ? (
+                  <div className="flex items-center justify-center">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Deleting...
+                  </div>
+                ) : (
+                  'Delete'
+                )}
               </button>
             </div>
           </div>
@@ -194,15 +209,15 @@ const AppointmentActions = ({ appointment, onEdit, className = '' }) => {
       {/* Park Confirmation Modal */}
       {showParkConfirm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-gray-800 p-6 rounded-lg max-w-md w-full mx-4">
-            <h3 className="text-lg font-semibold text-white mb-4">Park Appointment</h3>
-            <p className="text-gray-300 mb-6">
+          <div className="theme-modal p-6 rounded-lg max-w-md w-full mx-4">
+            <h3 className="text-lg font-semibold theme-text mb-4">Park Appointment</h3>
+            <p className="theme-text opacity-70 mb-6">
               Are you sure you want to park this appointment? It will be moved to the parked list.
             </p>
             <div className="flex space-x-3">
               <button
                 onClick={() => setShowParkConfirm(false)}
-                className="flex-1 px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700"
+                className="flex-1 px-4 py-2 theme-border border theme-text rounded hover:opacity-80"
                 disabled={isLoading}
               >
                 Cancel
@@ -212,7 +227,14 @@ const AppointmentActions = ({ appointment, onEdit, className = '' }) => {
                 className="flex-1 px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700"
                 disabled={isLoading}
               >
-                {isLoading ? 'Parking...' : 'Park'}
+                {isLoading ? (
+                  <div className="flex items-center justify-center">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Parking...
+                  </div>
+                ) : (
+                  'Park'
+                )}
               </button>
             </div>
           </div>
@@ -222,15 +244,15 @@ const AppointmentActions = ({ appointment, onEdit, className = '' }) => {
       {/* Unpark Confirmation Modal */}
       {showUnparkConfirm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-gray-800 p-6 rounded-lg max-w-md w-full mx-4">
-            <h3 className="text-lg font-semibold text-white mb-4">Unpark Appointment</h3>
-            <p className="text-gray-300 mb-6">
+          <div className="theme-modal p-6 rounded-lg max-w-md w-full mx-4">
+            <h3 className="text-lg font-semibold theme-text mb-4">Unpark Appointment</h3>
+            <p className="theme-text opacity-70 mb-6">
               Are you sure you want to unpark this appointment? It will be moved back to the active list.
             </p>
             <div className="flex space-x-3">
               <button
                 onClick={() => setShowUnparkConfirm(false)}
-                className="flex-1 px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700"
+                className="flex-1 px-4 py-2 theme-border border theme-text rounded hover:opacity-80"
                 disabled={isLoading}
               >
                 Cancel
@@ -240,7 +262,14 @@ const AppointmentActions = ({ appointment, onEdit, className = '' }) => {
                 className="flex-1 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
                 disabled={isLoading}
               >
-                {isLoading ? 'Unparking...' : 'Unpark'}
+                {isLoading ? (
+                  <div className="flex items-center justify-center">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Unparking...
+                  </div>
+                ) : (
+                  'Unpark'
+                )}
               </button>
             </div>
           </div>

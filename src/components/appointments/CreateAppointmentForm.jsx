@@ -1,6 +1,12 @@
 import React, { useState, useEffect } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
-import { createAppointment, updateAppointment } from '../../features/appointments/appointmentsSlice'
+import { 
+  createAppointment, 
+  updateAppointment, 
+  resetLoadingState,
+  optimisticCreateAppointment,
+  optimisticUpdateAppointment
+} from '../../features/appointments/appointmentsSlice'
 import { fetchClients, resetLoadingState as resetClientsLoading } from '../../features/clients/clientsSlice'
 import { fetchServices, resetLoadingState as resetServicesLoading } from '../../features/services/servicesSlice'
 import { addSuccess, addError } from '../../features/alerts/alertsSlice'
@@ -58,7 +64,6 @@ const CreateAppointmentForm = ({ onClose, selectedDate = null, appointment = nul
   const isFormValid = () => {
     // Don't allow submission while loading
     if (clientsLoading || servicesLoading) {
-  
       return false
     }
     
@@ -70,8 +75,6 @@ const CreateAppointmentForm = ({ onClose, selectedDate = null, appointment = nul
       formData.duration >= 15 &&
       formData.price > 0
     )
-    
-
     
     return isValid
   }
@@ -113,16 +116,27 @@ const CreateAppointmentForm = ({ onClose, selectedDate = null, appointment = nul
   // Force reset loading states after a timeout
   useEffect(() => {
     const timeout = setTimeout(() => {
-      if (clientsLoading) {
+      if (clientsLoading && clients.length > 0) {
         dispatch(resetClientsLoading())
       }
-      if (servicesLoading) {
+      if (servicesLoading && services.length > 0) {
         dispatch(resetServicesLoading())
       }
-    }, 3000) // 3 second timeout
+    }, 5000) // 5 second timeout
 
     return () => clearTimeout(timeout)
-  }, [clientsLoading, servicesLoading, dispatch])
+  }, [clientsLoading, servicesLoading, clients.length, services.length, dispatch])
+
+  // Reset appointments loading state after timeout
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      if (isLoading) {
+        dispatch(resetLoadingState())
+      }
+    }, 10000) // 10 second timeout for appointment operations
+
+    return () => clearTimeout(timeout)
+  }, [isLoading, dispatch])
 
   // Set selected client and service when editing
   useEffect(() => {
@@ -190,7 +204,7 @@ const CreateAppointmentForm = ({ onClose, selectedDate = null, appointment = nul
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-
+    
     if (!validateForm()) {
       return
     }
@@ -199,29 +213,81 @@ const CreateAppointmentForm = ({ onClose, selectedDate = null, appointment = nul
       const appointmentData = {
         ...formData,
         stylist_id: profile.id,
-        created_by: profile.id
+        brand_id: profile.brand_id
       }
 
       if (onSubmit) {
         // Use custom onSubmit if provided (for calendar integration)
         await onSubmit(appointmentData)
       } else if (isEditing) {
-        // Handle editing
+        // Handle editing with optimistic update
+        // Apply optimistic update immediately
+        dispatch(optimisticUpdateAppointment({
+          id: appointment.id,
+          updates: appointmentData
+        }))
+        
+        // Show success message immediately
+        dispatch(addSuccess('Appointment updated successfully!'))
+        
+        // Close modal immediately for instant feedback
+        onClose()
+        
+        // Perform actual update
         await dispatch(updateAppointment({
           id: appointment.id,
           updates: appointmentData
         })).unwrap()
-        dispatch(addSuccess('Appointment updated successfully!'))
       } else {
-        // Handle creating
-        await dispatch(createAppointment(appointmentData)).unwrap()
+        // Handle creating with optimistic update
+        // Create a temporary ID for optimistic update
+        const tempId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+        
+        // Get client and service data for better optimistic update
+        const selectedClient = clients.find(c => c.id === appointmentData.client_id)
+        const selectedService = services.find(s => s.id === appointmentData.service_id)
+        
+        const optimisticAppointment = {
+          ...appointmentData,
+          id: tempId,
+          clients: selectedClient || { 
+            id: appointmentData.client_id,
+            full_name: 'Creating...', 
+            phone: '', 
+            email: '' 
+          },
+          services: selectedService || { 
+            id: appointmentData.service_id,
+            name: 'Creating...', 
+            price: appointmentData.price || 0, 
+            duration: appointmentData.duration || 60 
+          },
+          parked: false,
+          status: 'scheduled',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }
+        
+        // Apply optimistic update immediately
+        dispatch(optimisticCreateAppointment(optimisticAppointment))
+        
+        // Show success message immediately
         dispatch(addSuccess('Appointment created successfully!'))
+        
+        // Close modal immediately for instant feedback
+        onClose()
+        
+        // Perform actual creation
+        await dispatch(createAppointment(appointmentData)).unwrap()
       }
       
-      onClose()
+      // Reset loading state after successful submission
+      dispatch(resetLoadingState())
     } catch (error) {
       const errorMessage = error?.message || error?.toString() || 'Failed to create appointment'
       dispatch(addError(`Failed to create appointment: ${errorMessage}`))
+      // Reset loading state on error
+      dispatch(resetLoadingState())
     }
   }
 
@@ -272,15 +338,15 @@ const CreateAppointmentForm = ({ onClose, selectedDate = null, appointment = nul
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-gray-800 rounded-lg shadow-xl w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto border border-gray-700">
+      <div className="theme-modal rounded-lg shadow-xl w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto border theme-border">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-700">
-          <h2 className="text-2xl font-bold text-white">
+        <div className="flex items-center justify-between p-6 border-b theme-border">
+          <h2 className="text-2xl font-bold theme-text">
             {isEditing ? 'Edit Appointment' : 'Create New Appointment'}
           </h2>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-white transition-colors"
+            className="theme-text opacity-70 hover:opacity-100 transition-colors"
           >
             <X className="w-6 h-6" />
           </button>
@@ -290,7 +356,7 @@ const CreateAppointmentForm = ({ onClose, selectedDate = null, appointment = nul
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
           {/* Loading Indicator */}
           {(clientsLoading || servicesLoading) && (
-            <div className="bg-blue-900 border border-blue-700 rounded-md p-4 mb-4">
+            <div className="theme-card border theme-border rounded-md p-4 mb-4">
               <LoadingSpinner 
                 color="blue" 
                 text={clientsLoading && servicesLoading ? 'Loading clients and services...' :
@@ -302,7 +368,7 @@ const CreateAppointmentForm = ({ onClose, selectedDate = null, appointment = nul
 
           {/* Client Selection */}
           <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-300">
+            <label className="block text-sm font-medium theme-text">
               Customer *
             </label>
             <div className={`${errors.client_id ? 'border-red-500' : ''}`}>
@@ -341,7 +407,7 @@ const CreateAppointmentForm = ({ onClose, selectedDate = null, appointment = nul
 
           {/* Service Selection */}
           <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-300">
+            <label className="block text-sm font-medium theme-text">
               Service *
             </label>
             <div className={`${errors.service_id ? 'border-red-500' : ''}`}>
@@ -381,7 +447,7 @@ const CreateAppointmentForm = ({ onClose, selectedDate = null, appointment = nul
           {/* Date and Time */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
+              <label className="block text-sm font-medium theme-text mb-2">
                 <Calendar className="w-4 h-4 inline mr-2" />
                 Date & Time *
               </label>
@@ -390,8 +456,8 @@ const CreateAppointmentForm = ({ onClose, selectedDate = null, appointment = nul
                 name="date"
                 value={formData.date}
                 onChange={handleInputChange}
-                className={`w-full px-3 py-2 bg-gray-700 border rounded-md text-white focus:outline-none focus:ring-2 focus:ring-purple-500 ${
-                  errors.date ? 'border-red-500' : 'border-gray-600'
+                className={`w-full px-3 py-2 theme-input border rounded-md theme-text focus:outline-none focus:ring-2 focus:ring-purple-500 ${
+                  errors.date ? 'border-red-500' : 'theme-border'
                 }`}
               />
               {errors.date && (
@@ -400,7 +466,7 @@ const CreateAppointmentForm = ({ onClose, selectedDate = null, appointment = nul
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
+              <label className="block text-sm font-medium theme-text mb-2">
                 <Clock className="w-4 h-4 inline mr-2" />
                 Duration (minutes) *
               </label>
@@ -411,8 +477,8 @@ const CreateAppointmentForm = ({ onClose, selectedDate = null, appointment = nul
                 onChange={handleInputChange}
                 min="15"
                 step="15"
-                className={`w-full px-3 py-2 bg-gray-700 border rounded-md text-white focus:outline-none focus:ring-2 focus:ring-purple-500 ${
-                  errors.duration ? 'border-red-500' : 'border-gray-600'
+                className={`w-full px-3 py-2 theme-input border rounded-md theme-text focus:outline-none focus:ring-2 focus:ring-purple-500 ${
+                  errors.duration ? 'border-red-500' : 'theme-border'
                 }`}
               />
               {errors.duration && (
@@ -424,7 +490,7 @@ const CreateAppointmentForm = ({ onClose, selectedDate = null, appointment = nul
           {/* Price and Type */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
+              <label className="block text-sm font-medium theme-text mb-2">
                 <DollarSign className="w-4 h-4 inline mr-2" />
                 Price ($) *
               </label>
@@ -435,8 +501,8 @@ const CreateAppointmentForm = ({ onClose, selectedDate = null, appointment = nul
                 onChange={handleInputChange}
                 min="0"
                 step="0.01"
-                className={`w-full px-3 py-2 bg-gray-700 border rounded-md text-white focus:outline-none focus:ring-2 focus:ring-purple-500 ${
-                  errors.price ? 'border-red-500' : 'border-gray-600'
+                className={`w-full px-3 py-2 theme-input border rounded-md theme-text focus:outline-none focus:ring-2 focus:ring-purple-500 ${
+                  errors.price ? 'border-red-500' : 'theme-border'
                 }`}
               />
               {errors.price && (
@@ -445,25 +511,25 @@ const CreateAppointmentForm = ({ onClose, selectedDate = null, appointment = nul
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
+              <label className="block text-sm font-medium theme-text mb-2">
                 Appointment Type
               </label>
               <select
                 name="type"
                 value={formData.type}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                className="w-full px-3 py-2 theme-input border theme-border rounded-md theme-text focus:outline-none focus:ring-2 focus:ring-purple-500"
               >
-                <option value="normal" className="bg-gray-700 text-white">Normal</option>
-                <option value="consultation" className="bg-gray-700 text-white">Consultation</option>
-                <option value="follow_up" className="bg-gray-700 text-white">Follow Up</option>
+                <option value="normal" className="theme-input theme-text">Normal</option>
+                <option value="consultation" className="theme-input theme-text">Consultation</option>
+                <option value="follow_up" className="theme-input theme-text">Follow Up</option>
               </select>
             </div>
           </div>
 
           {/* Deposit */}
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
+            <label className="block text-sm font-medium theme-text mb-2">
               Deposit Percentage (%)
             </label>
             <input
@@ -473,13 +539,13 @@ const CreateAppointmentForm = ({ onClose, selectedDate = null, appointment = nul
               onChange={handleInputChange}
               min="0"
               max="100"
-              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="w-full px-3 py-2 theme-input border theme-border rounded-md theme-text focus:outline-none focus:ring-2 focus:ring-purple-500"
             />
           </div>
 
           {/* Notes */}
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
+            <label className="block text-sm font-medium theme-text mb-2">
               Notes
             </label>
             <textarea
@@ -487,7 +553,7 @@ const CreateAppointmentForm = ({ onClose, selectedDate = null, appointment = nul
               value={formData.notes}
               onChange={handleInputChange}
               rows="3"
-              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="w-full px-3 py-2 theme-input border theme-border rounded-md theme-text focus:outline-none focus:ring-2 focus:ring-purple-500"
               placeholder="Any special instructions or notes..."
             />
           </div>
@@ -495,39 +561,29 @@ const CreateAppointmentForm = ({ onClose, selectedDate = null, appointment = nul
 
 
           {/* Action Buttons */}
-          <div className="flex justify-end space-x-4 pt-4 border-t border-gray-700">
+          <div className="flex justify-end space-x-4 pt-4 border-t theme-border">
             <button
               type="button"
               onClick={() => {
                 dispatch(resetClientsLoading())
                 dispatch(resetServicesLoading())
+                dispatch(resetLoadingState())
               }}
-              className="px-2 py-1 text-xs text-gray-400 bg-gray-800 rounded border border-gray-600 hover:bg-gray-700"
+              className="px-2 py-1 text-xs theme-text opacity-70 theme-card rounded border theme-border hover:opacity-80"
             >
               Reset Loading
             </button>
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-gray-300 bg-gray-700 rounded-md hover:bg-gray-600 transition-colors"
+              className="px-4 py-2 theme-text theme-card rounded-md hover:opacity-80 transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isLoading || !isFormValid()}
-              className="px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-md hover:from-purple-700 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center min-w-[140px]"
-              onClick={() => {
-                // Temporary debug
-                console.log('Button clicked - Loading states:', {
-                  isLoading,
-                  clientsLoading,
-                  servicesLoading,
-                  isFormValid: isFormValid(),
-                  clientsCount: clients.length,
-                  servicesCount: services.length
-                })
-              }}
+              className="px-4 py-2 theme-gradient text-white rounded-md theme-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center min-w-[140px]"
             >
               {isLoading ? (
                 <div className="flex items-center">

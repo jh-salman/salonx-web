@@ -48,6 +48,7 @@ import { supabase } from '../lib/supabase'
 // Components
 import LoadingSpinner from '../components/shared/LoadingSpinner'
 import SignoutButton from '../components/SignoutButton'
+import ThemeSelector from '../components/shared/ThemeSelector'
 
 
 const DashboardPage = () => {
@@ -288,13 +289,13 @@ const DashboardPage = () => {
         <div
           className="absolute inset-0 rounded-full"
           style={{
-            background: `conic-gradient(#f97316 ${angle}deg, rgba(255,255,255,0.08) 0deg)`
+            background: `conic-gradient(var(--theme-secondary) ${angle}deg, rgba(255,255,255,0.08) 0deg)`
           }}
         />
         {/* Inner face */}
-        <div className="absolute inset-1 rounded-full bg-black/70 border border-gray-600" />
+        <div className="absolute inset-1 rounded-full theme-card border theme-border" />
         {/* Center text */}
-        <div className="absolute inset-0 flex items-center justify-center text-white text-xs font-semibold">
+        <div className="absolute inset-0 flex items-center justify-center theme-text text-xs font-semibold">
           {label}
         </div>
       </div>
@@ -304,14 +305,14 @@ const DashboardPage = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+      <div className="min-h-screen theme-bg flex items-center justify-center">
         <div className="text-center">
           <AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-white mb-2">Error Loading Dashboard</h2>
-          <p className="text-gray-400 mb-4">{error}</p>
+          <h2 className="text-xl font-semibold theme-text mb-2">Error Loading Dashboard</h2>
+          <p className="theme-text opacity-70 mb-4">{error}</p>
           <button 
             onClick={() => window.location.reload()}
-            className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors"
+            className="theme-accent text-white px-4 py-2 rounded-lg hover:opacity-80 transition-colors"
           >
             Retry
           </button>
@@ -321,21 +322,21 @@ const DashboardPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-900">
+    <div className="min-h-screen theme-bg">
       {/* Header */}
-      <header className="bg-gray-800 border-b border-gray-700">
+      <header className="theme-header border-b theme-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <h1 className="text-2xl font-bold text-white">Dashboard</h1>
-              <div className="text-sm text-gray-400">
+              <h1 className="text-2xl font-bold theme-text">Dashboard</h1>
+              <div className="text-sm theme-text opacity-70">
                 Welcome back, {profile?.full_name}
               </div>
             </div>
             <div className="flex items-center space-x-3">
               <Link
                 to="/calendar"
-                className="bg-gradient-to-r from-purple-600 to-blue-600 text-white px-4 py-2 rounded-lg hover:from-purple-700 hover:to-blue-700 transition-colors flex items-center space-x-2"
+                className="theme-gradient text-white px-4 py-2 rounded-lg theme-hover transition-colors flex items-center space-x-2"
               >
                 <Calendar className="w-4 h-4" />
                 <span>Calendar</span>
@@ -360,52 +361,52 @@ const DashboardPage = () => {
 
         {/* KPI Section */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
+          <div className="theme-card rounded-lg p-6 border theme-border">
             <div className="flex items-center">
               <div className="flex-shrink-0">
                 <Calendar className="w-8 h-8 text-purple-400" />
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-400">Today's Appointments</p>
-                <p className="text-2xl font-bold text-white">{todayAppointments.length}</p>
+                <p className="text-sm font-medium theme-text opacity-70">Today's Appointments</p>
+                <p className="text-2xl font-bold theme-text">{todayAppointments.length}</p>
               </div>
             </div>
           </div>
           
-          <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
+          <div className="theme-card rounded-lg p-6 border theme-border">
             <div className="flex items-center">
               <div className="flex-shrink-0">
                 <Users className="w-8 h-8 text-blue-400" />
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-400">Active Clients</p>
-                <p className="text-2xl font-bold text-white">
+                <p className="text-sm font-medium theme-text opacity-70">Active Clients</p>
+                <p className="text-2xl font-bold theme-text">
                   {appointments.filter(apt => apt.status === 'in_progress').length}
                 </p>
               </div>
             </div>
           </div>
           
-          <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
+          <div className="theme-card rounded-lg p-6 border theme-border">
             <div className="flex items-center">
               <div className="flex-shrink-0">
                 <DollarSign className="w-8 h-8 text-green-400" />
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-400">Revenue Today</p>
-                <p className="text-2xl font-bold text-white">${todayRevenue}</p>
+                <p className="text-sm font-medium theme-text opacity-70">Revenue Today</p>
+                <p className="text-2xl font-bold theme-text">${todayRevenue}</p>
               </div>
             </div>
           </div>
           
-          <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
+          <div className="theme-card rounded-lg p-6 border theme-border">
             <div className="flex items-center">
               <div className="flex-shrink-0">
                 <TrendingUp className="w-8 h-8 text-orange-400" />
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-400">Completion Rate</p>
-                <p className="text-2xl font-bold text-white">{completionRate}%</p>
+                <p className="text-sm font-medium theme-text opacity-70">Completion Rate</p>
+                <p className="text-2xl font-bold theme-text">{completionRate}%</p>
               </div>
             </div>
           </div>
@@ -413,9 +414,9 @@ const DashboardPage = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Appointments Queue - styled like mock */}
-          <div className="rounded-2xl border border-orange-500/60 bg-gradient-to-b from-gray-800 to-gray-900 overflow-hidden">
-            <div className="p-5 border-b border-gray-700/70">
-              <h3 className="text-lg font-semibold text-white flex items-center">
+          <div className="theme-card rounded-2xl border theme-border overflow-hidden">
+            <div className="p-5 border-b theme-border">
+              <h3 className="text-lg font-semibold theme-text flex items-center">
                 <Clock className="w-5 h-5 mr-2 text-orange-400" />
                 Today's Appointments ({activeAppointments.length})
               </h3>
@@ -424,28 +425,23 @@ const DashboardPage = () => {
               {activeAppointments.length > 0 ? (
                 <div className="space-y-4">
                   {activeAppointments.map((appointment, index) => (
-                    <div key={appointment.id} className="relative rounded-xl bg-black/30 border border-gray-700/60 p-4">
-                      {/* Serial Number */}
-                      <div className="absolute -top-3 -left-3 w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center text-white font-bold text-base border-3 border-gray-900 shadow-lg z-10">
-                        {index + 1}
-                      </div>
+                    <div key={appointment.id} className="relative rounded-xl theme-card border theme-border p-4">
                       {/* vertical divider/time area on right */}
-                      <div className="absolute right-24 top-4 bottom-4 w-px bg-gray-600/60" />
+                      <div className="absolute right-24 top-4 bottom-4 w-px theme-border opacity-60" />
                       <div className="flex items-center justify-between">
                         {/* Left: client + service */}
                         <div className="pr-4">
                           <div className="flex items-center gap-2">
-                            <span className="text-orange-400 font-bold text-lg">#{index + 1}</span>
-                            <div className="text-white text-xl font-extrabold leading-tight">
+                            <div className="theme-text text-xl font-extrabold leading-tight">
                               {appointment.clients?.full_name || appointment.client_name || 'Unknown Client'}
                             </div>
                           </div>
-                          <div className="text-gray-300 text-base">
+                          <div className="theme-text text-base opacity-70">
                             {appointment.services?.name || appointment.service_name || 'Unknown Service'}
                           </div>
                         </div>
                         {/* Middle: time range */}
-                        <div className="text-gray-100 text-lg font-medium">{formatTimeRange(appointment)}</div>
+                        <div className="theme-text text-lg font-medium">{formatTimeRange(appointment)}</div>
                         {/* Right: timer dial (duration minutes) */}
                         <div className="ml-6 flex items-center justify-center">
                           <TimerDial apt={appointment} />
@@ -457,7 +453,7 @@ const DashboardPage = () => {
                           const rem = getRemaining(appointment)
                           if (rem === null) {
                             return (
-                              <button onClick={() => setConfirmTimerApt(appointment)} className="text-gray-300 hover:text-white transition-colors">
+                              <button onClick={() => setConfirmTimerApt(appointment)} className="theme-text opacity-70 hover:opacity-100 transition-colors">
                                 set timer
                               </button>
                             )
@@ -482,24 +478,24 @@ const DashboardPage = () => {
                           )
                         })()}
                       </div>
-                      {/* orange timeline dot */}
-                      <div className="absolute left-1/2 -translate-x-1/2 -bottom-2 w-4 h-4 bg-orange-500 rounded-full border-2 border-gray-900 shadow" />
+                      {/* timeline dot */}
+                      <div className="absolute left-1/2 -translate-x-1/2 -bottom-2 w-4 h-4 theme-accent rounded-full border-2 border-white shadow" />
                     </div>
                   ))}
                 </div>
               ) : (
                 <div className="text-center py-8">
                   <Clock className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-400">No appointments scheduled for today</p>
+                  <p className="theme-text">No appointments scheduled for today</p>
                 </div>
               )}
             </div>
           </div>
 
           {/* Waitlist */}
-          <div className="bg-gray-800 rounded-lg border border-gray-700">
-            <div className="p-6 border-b border-gray-700">
-              <h3 className="text-lg font-semibold text-white flex items-center">
+          <div className="theme-card rounded-lg border theme-border">
+            <div className="p-6 border-b theme-border">
+              <h3 className="text-lg font-semibold theme-text flex items-center">
                 <Users className="w-5 h-5 mr-2 text-blue-400" />
                 Waitlist
               </h3>
@@ -508,19 +504,19 @@ const DashboardPage = () => {
               {waitlist.length > 0 ? (
                 <div className="space-y-4">
                   {waitlist.map((item) => (
-                    <div key={item.id} className="bg-gray-700 rounded-lg p-4">
+                    <div key={item.id} className="theme-card rounded-lg p-4 border theme-border">
                       <div className="flex items-center justify-between mb-3">
                         <div>
-                          <h4 className="font-semibold text-white">
+                          <h4 className="font-semibold theme-text">
                             {item.clients?.full_name || item.client_name || 'Unknown Client'}
                           </h4>
-                          <p className="text-sm text-gray-400">
+                          <p className="text-sm theme-text opacity-70">
                             {item.services?.name || item.service_name || 'Unknown Service'} • {item.wait_time} min wait
                           </p>
                         </div>
                         <button
                           onClick={() => handlePromoteToAppointment(item)}
-                          className="bg-purple-600 text-white px-3 py-2 rounded text-sm hover:bg-purple-700 transition-colors flex items-center"
+                          className="theme-accent text-white px-3 py-2 rounded text-sm hover:opacity-80 transition-colors flex items-center"
                         >
                           <Plus className="w-4 h-4 mr-1" />
                           Promote
@@ -532,7 +528,7 @@ const DashboardPage = () => {
               ) : (
                 <div className="text-center py-8">
                   <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-400">No one on waitlist</p>
+                  <p className="theme-text">No one on waitlist</p>
                 </div>
               )}
             </div>
@@ -541,9 +537,9 @@ const DashboardPage = () => {
 
         {/* Needs Attention */}
         {needsAttention.length > 0 && (
-          <div className="mt-8 bg-gray-800 rounded-lg border border-gray-700">
-            <div className="p-6 border-b border-gray-700">
-              <h3 className="text-lg font-semibold text-white flex items-center">
+          <div className="mt-8 theme-card rounded-lg border theme-border">
+            <div className="p-6 border-b theme-border">
+              <h3 className="text-lg font-semibold theme-text flex items-center">
                 <AlertCircle className="w-5 h-5 mr-2 text-orange-400" />
                 Needs Attention
               </h3>
@@ -551,13 +547,13 @@ const DashboardPage = () => {
             <div className="p-6">
               <div className="space-y-4">
                 {needsAttention.map((appointment) => (
-                  <div key={appointment.id} className="bg-gray-700 rounded-lg p-4">
+                  <div key={appointment.id} className="theme-card rounded-lg p-4 border theme-border">
                     <div className="flex items-center justify-between">
                       <div>
-                        <h4 className="font-semibold text-white">
+                        <h4 className="font-semibold theme-text">
                           {appointment.client_name}
                         </h4>
-                        <p className="text-sm text-gray-400">
+                        <p className="text-sm theme-text opacity-70">
                           {appointment.service_name} • {appointment.appointment_time}
                         </p>
                         {(!appointment.notes || appointment.notes === '') && (
@@ -568,7 +564,7 @@ const DashboardPage = () => {
                       </div>
                       <Link
                         to={`/appointments/${appointment.id}`}
-                        className="bg-orange-600 text-white px-3 py-2 rounded text-sm hover:bg-orange-700 transition-colors flex items-center"
+                        className="theme-accent text-white px-3 py-2 rounded text-sm hover:opacity-80 transition-colors flex items-center"
                       >
                         <MessageSquare className="w-4 h-4 mr-1" />
                         Add Notes
@@ -582,11 +578,11 @@ const DashboardPage = () => {
         )}
 
         {/* Calendar Link */}
-        <div className="mt-8 bg-gray-800 rounded-lg border border-gray-700 p-6">
+        <div className="mt-8 theme-card rounded-lg border theme-border p-6">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-lg font-semibold text-white">Calendar View</h3>
-              <p className="text-gray-400">Quick access to your calendar</p>
+              <h3 className="text-lg font-semibold theme-text">Calendar View</h3>
+              <p className="theme-text opacity-70">Quick access to your calendar</p>
             </div>
             <div className="flex items-center space-x-4">
               <div className="flex space-x-2">
@@ -596,8 +592,8 @@ const DashboardPage = () => {
                     onClick={() => setCalendarView(view)}
                     className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
                       calendarView === view
-                        ? 'bg-purple-600 text-white'
-                        : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                        ? 'theme-accent text-white'
+                        : 'theme-card border theme-border theme-text hover:opacity-80'
                     }`}
                   >
                     {view.charAt(0).toUpperCase() + view.slice(1)}
@@ -606,7 +602,7 @@ const DashboardPage = () => {
               </div>
               <Link
                 to="/calendar"
-                className="bg-gradient-to-r from-purple-600 to-blue-600 text-white px-4 py-2 rounded-lg hover:from-purple-700 hover:to-blue-700 transition-colors flex items-center space-x-2"
+                className="theme-gradient text-white px-4 py-2 rounded-lg theme-hover transition-colors flex items-center space-x-2"
               >
                 <Calendar className="w-4 h-4" />
                 <span>Open Calendar</span>
@@ -615,81 +611,13 @@ const DashboardPage = () => {
             </div>
           </div>
         </div>
+
+        {/* Theme Selector */}
+        <div className="mt-8">
+          <ThemeSelector />
+        </div>
       </div>
-
-      {/* Review Modal */}
-      {reviewApt && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-          <div className="bg-gray-800 border border-gray-700 rounded-2xl p-6 w-full max-w-md">
-            <div className="text-lg font-semibold text-white mb-2">Review Appointment</div>
-            <div className="text-gray-300 mb-4">
-              {reviewApt.clients?.full_name || reviewApt.client_name || 'Unknown Client'} • {reviewApt.services?.name || reviewApt.service_name || 'Unknown Service'}
-            </div>
-            <div className="mb-4">
-              <label className="block text-sm text-gray-400 mb-1">Rating</label>
-              <select value={reviewRating} onChange={(e)=>setReviewRating(parseInt(e.target.value))} className="w-full bg-gray-700 border border-gray-600 rounded p-2 text-white">
-                {[5,4,3,2,1].map(v=> <option key={v} value={v}>{v} / 5</option>)}
-              </select>
-            </div>
-            <div className="mb-6">
-              <label className="block text-sm text-gray-400 mb-1">Comments</label>
-              <textarea rows={4} value={reviewText} onChange={(e)=>setReviewText(e.target.value)} className="w-full bg-gray-700 border border-gray-600 rounded p-2 text-white" placeholder="How did it go?" />
-            </div>
-            <div className="flex items-center justify-end gap-3">
-              <button onClick={()=>setReviewApt(null)} className="px-3 py-2 rounded bg-gray-700 text-gray-200">Cancel</button>
-              <button onClick={async ()=>{
-                try {
-                  await dispatch(createReview({
-                    appointmentId: reviewApt.id,
-                    rating: reviewRating,
-                    comment: reviewText,
-                    clientId: reviewApt.client_id,
-                    stylistId: reviewApt.stylist_id
-                  })).unwrap()
-                } catch(e) {}
-                setReviewApt(null)
-                setReviewText('')
-                // ensure list updates and jump to calendar
-                dispatch(fetchAppointments())
-                navigate('/calendar')
-              }} className="px-3 py-2 rounded bg-purple-600 hover:bg-purple-700 text-white">Save Review</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Confirm Start Timer Modal */}
-      {confirmTimerApt && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-          <div className="bg-gray-800 border border-gray-700 rounded-2xl p-6 w-full max-w-md">
-            <div className="text-lg font-semibold text-white mb-2">Start Timer?</div>
-            <div className="text-gray-300 mb-4">
-              Set duration and start timer for{' '}
-              <span className="text-white font-semibold">
-                {confirmTimerApt.clients?.full_name || confirmTimerApt.client_name || 'Unknown Client'}
-              </span> · {confirmTimerApt.services?.name || confirmTimerApt.service_name || 'Unknown Service'}
-            </div>
-            <div className="mb-4">
-              <label className="block text-sm text-gray-400 mb-1">Duration (minutes)</label>
-              <input
-                type="number"
-                min={1}
-                step={1}
-                value={timerMinutes}
-                onChange={(e)=>setTimerMinutes(e.target.value)}
-                onKeyDown={(e)=>{ if(e.key==='Enter' && Number(timerMinutes)>0){ startTimer(confirmTimerApt, parseInt(timerMinutes,10)); setConfirmTimerApt(null); setTimerMinutes('') } }}
-                placeholder="e.g., 45"
-                className="w-full bg-gray-700 border border-gray-600 rounded p-2 text-white"
-              />
-            </div>
-            <div className="flex items-center justify-end gap-3">
-              <button onClick={()=>setConfirmTimerApt(null)} className="px-3 py-2 rounded bg-gray-700 text-gray-200">Cancel</button>
-              <button disabled={!Number(timerMinutes)} onClick={()=>{ startTimer(confirmTimerApt, parseInt(timerMinutes,10)); setConfirmTimerApt(null); setTimerMinutes('') }} className="px-3 py-2 rounded bg-orange-600 hover:bg-orange-700 text-white disabled:opacity-50 disabled:cursor-not-allowed">Start Timer</button>
-            </div>
-          </div>
-        </div>
-      )}
-
+      
     </div>
   )
 }

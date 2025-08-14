@@ -155,6 +155,79 @@ export const API_ENDPOINTS = {
   PERFORMANCE: '/performance'
 }
 
+// App Themes
+export const APP_THEMES = {
+  BLUE: 'blue',
+  PINK: 'pink', 
+  YELLOW: 'yellow',
+  BLACK: 'black',
+  DARK: 'dark'
+}
+
+// Theme Colors
+export const THEME_COLORS = {
+  blue: {
+    primary: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
+    secondary: '#3b82f6',
+    accent: '#60a5fa',
+    hover: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
+    border: '#1e40af',
+    bg: '#eff6ff',
+    text: '#1e3a8a',
+    cardBg: '#ffffff',
+    inputBg: '#ffffff',
+    headerBg: '#dbeafe'
+  },
+  pink: {
+    primary: 'linear-gradient(135deg, #ec4899 0%, #be185d 100%)',
+    secondary: '#ec4899',
+    accent: '#f472b6',
+    hover: 'linear-gradient(135deg, #db2777 0%, #be185d 100%)',
+    border: '#be185d',
+    bg: '#fdf2f8',
+    text: '#831843',
+    cardBg: '#ffffff',
+    inputBg: '#ffffff',
+    headerBg: '#fce7f3'
+  },
+  yellow: {
+    primary: 'linear-gradient(135deg, #eab308 0%, #a16207 100%)',
+    secondary: '#eab308',
+    accent: '#fbbf24',
+    hover: 'linear-gradient(135deg, #ca8a04 0%, #a16207 100%)',
+    border: '#a16207',
+    bg: '#fefce8',
+    text: '#713f12',
+    cardBg: '#ffffff',
+    inputBg: '#ffffff',
+    headerBg: '#fef3c7'
+  },
+  black: {
+    primary: 'linear-gradient(135deg, #374151 0%, #111827 100%)',
+    secondary: '#374151',
+    accent: '#6b7280',
+    hover: 'linear-gradient(135deg, #1f2937 0%, #111827 100%)',
+    border: '#111827',
+    bg: '#f9fafb',
+    text: '#111827',
+    cardBg: '#ffffff',
+    inputBg: '#ffffff',
+    headerBg: '#f3f4f6'
+  },
+  dark: {
+    primary: 'linear-gradient(135deg, #4b5563 0%, #374151 100%)',
+    secondary: '#4b5563',
+    accent: '#6b7280',
+    hover: 'linear-gradient(135deg, #374151 0%, #1f2937 100%)',
+    border: '#374151',
+    bg: '#111827',
+    text: '#f9fafb',
+    cardBg: '#1f2937',
+    inputBg: '#374151',
+    headerBg: '#1f2937'
+  }
+}
+
 // Local Storage Keys
 export const STORAGE_KEYS = {
   AUTH: 'salonx-auth',
