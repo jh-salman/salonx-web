@@ -62,18 +62,18 @@ const applyThemeToDocument = (theme) => {
   
   // Remove existing theme classes from both html and body
   document.documentElement.classList.remove(
+    'theme-dark',
+    'theme-day',
     'theme-blue',
-    'theme-pink', 
     'theme-yellow',
-    'theme-black',
-    'theme-dark'
+    'theme-pink'
   )
   document.body.classList.remove(
+    'theme-dark',
+    'theme-day',
     'theme-blue',
-    'theme-pink', 
     'theme-yellow',
-    'theme-black',
-    'theme-dark'
+    'theme-pink'
   )
   
   // Add new theme class to both html and body
@@ -99,6 +99,9 @@ const applyThemeToDocument = (theme) => {
       element.style.setProperty('--theme-card-bg', colors.cardBg)
       element.style.setProperty('--theme-input-bg', colors.inputBg)
       element.style.setProperty('--theme-header-bg', colors.headerBg)
+      element.style.setProperty('--theme-calendar-bg', colors.calendarBg)
+      element.style.setProperty('--theme-calendar-card-bg', colors.calendarCardBg)
+      element.style.setProperty('--theme-calendar-border', colors.calendarBorder)
       
       // Also set background color directly for immediate effect
       element.style.backgroundColor = colors.bg

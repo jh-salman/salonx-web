@@ -247,9 +247,33 @@ const clientsSlice = createSlice({
       state.isLoading = false
       state.error = null
     },
+    // Optimistic updates
+    optimisticCreateClient: (state, action) => {
+      console.log('clientsSlice: Applying optimistic create client:', action.payload)
+      state.clients.push(action.payload)
+    },
+    optimisticUpdateClient: (state, action) => {
+      const { id, updates } = action.payload
+      const index = state.clients.findIndex(client => client.id === id)
+      if (index !== -1) {
+        state.clients[index] = { ...state.clients[index], ...updates }
+      }
+    },
+    optimisticDeleteClient: (state, action) => {
+      state.clients = state.clients.filter(client => client.id !== action.payload)
+    },
     // Realtime updates
     clientAdded: (state, action) => {
-      state.clients.push(action.payload)
+      console.log('clientsSlice: Realtime client added:', action.payload)
+      // Check if client already exists (from optimistic update)
+      const existingIndex = state.clients.findIndex(client => client.id === action.payload.id)
+      if (existingIndex !== -1) {
+        // Replace optimistic client with real data
+        state.clients[existingIndex] = action.payload
+      } else {
+        // Add new client
+        state.clients.push(action.payload)
+      }
     },
     clientUpdated: (state, action) => {
       const index = state.clients.findIndex(client => client.id === action.payload.id)
@@ -340,14 +364,17 @@ const clientsSlice = createSlice({
   }
 })
 
-export const {
-  setSelectedClient,
-  clearSelectedClient,
-  setFilters,
-  clearFilters,
+export const { 
+  setSelectedClient, 
+  clearSelectedClient, 
+  setFilters, 
+  clearFilters, 
   clearError,
   clearSearchResults,
   resetLoadingState,
+  optimisticCreateClient,
+  optimisticUpdateClient,
+  optimisticDeleteClient,
   clientAdded,
   clientUpdated,
   clientDeleted

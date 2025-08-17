@@ -48,7 +48,6 @@ import { supabase } from '../lib/supabase'
 // Components
 import LoadingSpinner from '../components/shared/LoadingSpinner'
 import SignoutButton from '../components/SignoutButton'
-import ThemeSelector from '../components/shared/ThemeSelector'
 
 
 const DashboardPage = () => {
@@ -323,38 +322,6 @@ const DashboardPage = () => {
 
   return (
     <div className="min-h-screen theme-bg">
-      {/* Header */}
-      <header className="theme-header border-b theme-border">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <h1 className="text-2xl font-bold theme-text">Dashboard</h1>
-              <div className="text-sm theme-text opacity-70">
-                Welcome back, {profile?.full_name}
-              </div>
-            </div>
-            <div className="flex items-center space-x-3">
-              <Link
-                to="/calendar"
-                className="theme-gradient text-white px-4 py-2 rounded-lg theme-hover transition-colors flex items-center space-x-2"
-              >
-                <Calendar className="w-4 h-4" />
-                <span>Calendar</span>
-              </Link>
-
-              <SignoutButton 
-                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center space-x-2"
-                onSignoutComplete={() => {
-                  console.log('Logout successful')
-                }}
-              >
-                <LogOut className="w-4 h-4" />
-                <span>Logout</span>
-              </SignoutButton>
-            </div>
-          </div>
-        </div>
-      </header>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
@@ -612,10 +579,7 @@ const DashboardPage = () => {
           </div>
         </div>
 
-        {/* Theme Selector */}
-        <div className="mt-8">
-          <ThemeSelector />
-        </div>
+
       </div>
       
     </div>

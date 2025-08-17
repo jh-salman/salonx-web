@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
-import { fetchServices, createService } from '../../features/services/servicesSlice'
+import { fetchServices, createService, optimisticCreateService } from '../../features/services/servicesSlice'
 import { addSuccess, addError } from '../../features/alerts/alertsSlice'
 import { FileText, Plus, ChevronDown, X, DollarSign, Clock } from 'lucide-react'
 import LoadingSpinner from '../shared/LoadingSpinner'
@@ -64,21 +64,40 @@ const ServiceSelector = ({ selectedService, onServiceSelect, onClose, ...props }
     }
     
     try {
-      console.log('ServiceSelector: Dispatching createService...')
-      const result = await dispatch(createService(newService)).unwrap()
-      console.log('ServiceSelector: createService result:', result)
+      // Create temporary ID for optimistic update
+      const tempId = `temp_service_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
       
-      // Auto-select the newly created service
-      if (result) {
-        handleServiceSelect(result)
+      const optimisticService = {
+        ...newService,
+        id: tempId,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       }
       
+      console.log('ServiceSelector: Applying optimistic update:', optimisticService)
+      
+      // Apply optimistic update immediately
+      dispatch(optimisticCreateService(optimisticService))
+      
+      // Auto-select the newly created service immediately
+      handleServiceSelect(optimisticService)
+      
+      // Show success message immediately
       dispatch(addSuccess({
         message: 'Service added successfully',
         title: 'Success'
       }))
+      
+      // Close form immediately for instant feedback
       setShowAddForm(false)
       setNewService({ name: '', description: '', price: 0, duration: 60 })
+      
+      console.log('ServiceSelector: Dispatching createService...')
+      
+      // Perform actual creation
+      const result = await dispatch(createService(newService)).unwrap()
+      console.log('ServiceSelector: createService result:', result)
+      
     } catch (error) {
       console.error('ServiceSelector: Error creating service:', error)
       dispatch(addError({

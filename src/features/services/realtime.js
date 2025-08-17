@@ -8,6 +8,11 @@ export const subscribeToServices = (dispatch, auth) => {
   console.log('subscribeToServices: Setting up services realtime subscription')
   console.log('subscribeToServices: Auth state:', { mode: auth.mode, brandId: auth.brandId, profileId: profile?.id })
   
+  // Add retry mechanism
+  let retryCount = 0
+  const maxRetries = 3
+  const retryDelay = 2000 // 2 seconds
+  
   // Build the subscription query based on user role and mode
   let query = supabase
     .channel('services')
@@ -81,7 +86,27 @@ export const subscribeToServices = (dispatch, auth) => {
     )
     .subscribe((status) => {
       console.log('subscribeToServices: Subscription status:', status)
+      if (status === 'SUBSCRIBED') {
+        console.log('subscribeToServices: Successfully subscribed to services realtime')
+        retryCount = 0 // Reset retry count on success
+      } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+        console.error(`subscribeToServices: Subscription ${status.toLowerCase()}`)
+        handleRetry()
+      }
     })
+    
+    // Retry function
+    const handleRetry = () => {
+      if (retryCount < maxRetries) {
+        retryCount++
+        console.log(`subscribeToServices: Retrying subscription (${retryCount}/${maxRetries})...`)
+        setTimeout(() => {
+          subscribeToServices(dispatch, auth)
+        }, retryDelay)
+      } else {
+        console.error('subscribeToServices: Max retries reached, giving up')
+      }
+    }
 
   return query
 }

@@ -11,6 +11,11 @@ export const subscribeToAppointments = (dispatch, auth) => {
     profileId: profile?.id
   })
   
+  // Add retry mechanism
+  let retryCount = 0
+  const maxRetries = 3
+  const retryDelay = 2000 // 2 seconds
+  
   // Build the subscription query based on user role and mode
   let query = supabase
     .channel('appointments')
@@ -128,14 +133,31 @@ export const subscribeToAppointments = (dispatch, auth) => {
       console.log('subscribeToAppointments: Subscription status:', status)
       if (status === 'SUBSCRIBED') {
         console.log('subscribeToAppointments: Successfully subscribed to appointments realtime')
+        retryCount = 0 // Reset retry count on success
       } else if (status === 'CHANNEL_ERROR') {
         console.error('subscribeToAppointments: Channel error occurred')
+        handleRetry()
       } else if (status === 'TIMED_OUT') {
         console.error('subscribeToAppointments: Subscription timed out')
+        handleRetry()
       } else if (status === 'CLOSED') {
         console.error('subscribeToAppointments: Subscription closed')
+        handleRetry()
       }
     })
+    
+    // Retry function
+    const handleRetry = () => {
+      if (retryCount < maxRetries) {
+        retryCount++
+        console.log(`subscribeToAppointments: Retrying subscription (${retryCount}/${maxRetries})...`)
+        setTimeout(() => {
+          subscribeToAppointments(dispatch, auth)
+        }, retryDelay)
+      } else {
+        console.error('subscribeToAppointments: Max retries reached, giving up')
+      }
+    }
 
   return query
 }

@@ -28,6 +28,8 @@ import LoadingState from './components/shared/LoadingState'
 import FastLoading from './components/shared/FastLoading'
 import AlertContainer from './components/shared/AlertContainer'
 import DataLoadingProvider from './components/shared/DataLoadingProvider'
+import Navbar from './components/shared/Navbar'
+import SliderDashboard from './components/shared/SliderDashboard'
 
 // Import realtime subscriptions
 import { subscribeToAuthChanges } from './features/auth/realtime'
@@ -71,6 +73,7 @@ function App() {
   const isFetching = useSelector(state => state.app.isFetching) || false
   const currentTheme = useSelector(selectCurrentTheme)
   const [subscriptions, setSubscriptions] = useState([])
+  const [isSliderOpen, setIsSliderOpen] = useState(false)
 
   // Debug logging
   console.log('App render - isAuthenticated:', isAuthenticated, 'isLoading:', isLoading, 'isInitialDataLoaded:', isInitialDataLoaded, 'isDataLoading:', isDataLoading, 'isFetching:', isFetching)
@@ -228,6 +231,19 @@ function App() {
     <ThemeProvider>
       <div className={`min-h-screen theme-bg theme-text`}>
         <AlertContainer />
+        
+        {/* Navbar - Only show when authenticated */}
+        {safeIsAuthenticated && safeUser && safeProfile && (
+          <Navbar onMenuClick={() => setIsSliderOpen(true)} />
+        )}
+        
+        {/* Slider Dashboard - Only show when authenticated */}
+        {safeIsAuthenticated && safeUser && safeProfile && (
+          <SliderDashboard 
+            isOpen={isSliderOpen} 
+            onClose={() => setIsSliderOpen(false)} 
+          />
+        )}
         
         <Routes>
         {/* Public routes - always accessible */}

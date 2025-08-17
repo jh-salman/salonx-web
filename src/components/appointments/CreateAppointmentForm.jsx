@@ -24,13 +24,45 @@ const CreateAppointmentForm = ({ onClose, selectedDate = null, appointment = nul
 
   // Initialize form data based on whether we're editing or creating
   const getInitialFormData = () => {
+    console.log('CreateAppointmentForm: getInitialFormData called with:', {
+      isEditing,
+      appointment: appointment ? { ...appointment, date: appointment.date } : null,
+      selectedDate
+    })
+    
     let initialData
     
     if (isEditing && appointment) {
+      // Validate appointment.date before using it
+      let dateValue
+      try {
+        console.log('CreateAppointmentForm: Processing appointment.date:', appointment.date)
+        
+        if (appointment.date && appointment.date instanceof Date && !isNaN(appointment.date)) {
+          console.log('CreateAppointmentForm: appointment.date is valid Date object')
+          dateValue = appointment.date.toISOString().slice(0, 16)
+        } else if (appointment.date && typeof appointment.date === 'string') {
+          console.log('CreateAppointmentForm: appointment.date is string, parsing...')
+          const parsedDate = new Date(appointment.date)
+          if (!isNaN(parsedDate)) {
+            dateValue = parsedDate.toISOString().slice(0, 16)
+          } else {
+            console.log('CreateAppointmentForm: Failed to parse appointment.date string, using current date')
+            dateValue = new Date().toISOString().slice(0, 16)
+          }
+        } else {
+          console.log('CreateAppointmentForm: appointment.date is invalid, using current date')
+          dateValue = new Date().toISOString().slice(0, 16)
+        }
+      } catch (error) {
+        console.error('CreateAppointmentForm: Error parsing appointment.date:', error)
+        dateValue = new Date().toISOString().slice(0, 16)
+      }
+      
       initialData = {
         client_id: appointment.client_id || '',
         service_id: appointment.service_id || '',
-        date: new Date(appointment.date).toISOString().slice(0, 16),
+        date: dateValue,
         duration: appointment.duration || 60,
         price: appointment.price || 0,
         type: appointment.type || 'normal',
@@ -38,10 +70,36 @@ const CreateAppointmentForm = ({ onClose, selectedDate = null, appointment = nul
         notes: appointment.notes || ''
       }
     } else {
+      // Validate selectedDate before using it
+      let dateValue
+      try {
+        console.log('CreateAppointmentForm: Processing selectedDate:', selectedDate)
+        
+        if (selectedDate && selectedDate instanceof Date && !isNaN(selectedDate)) {
+          console.log('CreateAppointmentForm: selectedDate is valid Date object')
+          dateValue = selectedDate.toISOString().slice(0, 16)
+        } else if (selectedDate && typeof selectedDate === 'string') {
+          console.log('CreateAppointmentForm: selectedDate is string, parsing...')
+          const parsedDate = new Date(selectedDate)
+          if (!isNaN(parsedDate)) {
+            dateValue = parsedDate.toISOString().slice(0, 16)
+          } else {
+            console.log('CreateAppointmentForm: Failed to parse selectedDate string, using current date')
+            dateValue = new Date().toISOString().slice(0, 16)
+          }
+        } else {
+          console.log('CreateAppointmentForm: selectedDate is invalid, using current date')
+          dateValue = new Date().toISOString().slice(0, 16)
+        }
+      } catch (error) {
+        console.error('CreateAppointmentForm: Error parsing selectedDate:', error)
+        dateValue = new Date().toISOString().slice(0, 16)
+      }
+      
       initialData = {
         client_id: '',
         service_id: '',
-        date: selectedDate ? new Date(selectedDate).toISOString().slice(0, 16) : new Date().toISOString().slice(0, 16),
+        date: dateValue,
         duration: 60,
         price: 50, // Set default price to enable button
         type: 'normal',
@@ -50,7 +108,7 @@ const CreateAppointmentForm = ({ onClose, selectedDate = null, appointment = nul
       }
     }
     
-
+    console.log('CreateAppointmentForm: Final initialData:', initialData)
     return initialData
   }
 
@@ -205,16 +263,23 @@ const CreateAppointmentForm = ({ onClose, selectedDate = null, appointment = nul
   const handleSubmit = async (e) => {
     e.preventDefault()
     
+    console.log('CreateAppointmentForm: handleSubmit called')
+    console.log('CreateAppointmentForm: formData:', formData)
+    console.log('CreateAppointmentForm: profile:', profile)
+    
     if (!validateForm()) {
+      console.log('CreateAppointmentForm: Form validation failed')
       return
     }
 
     try {
+      console.log('CreateAppointmentForm: Creating appointmentData...')
       const appointmentData = {
         ...formData,
         stylist_id: profile.id,
         brand_id: profile.brand_id
       }
+      console.log('CreateAppointmentForm: appointmentData created:', appointmentData)
 
       if (onSubmit) {
         // Use custom onSubmit if provided (for calendar integration)
@@ -240,12 +305,23 @@ const CreateAppointmentForm = ({ onClose, selectedDate = null, appointment = nul
         })).unwrap()
       } else {
         // Handle creating with optimistic update
-        // Create a temporary ID for optimistic update
-        const tempId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-        
         // Get client and service data for better optimistic update
         const selectedClient = clients.find(c => c.id === appointmentData.client_id)
         const selectedService = services.find(s => s.id === appointmentData.service_id)
+        
+        // Create a temporary ID for optimistic update
+        const tempId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+        
+        // Validate dates before creating optimistic appointment
+        let created_at, updated_at
+        try {
+          created_at = new Date().toISOString()
+          updated_at = new Date().toISOString()
+        } catch (error) {
+          console.error('CreateAppointmentForm: Error creating dates:', error)
+          created_at = new Date().toISOString()
+          updated_at = new Date().toISOString()
+        }
         
         const optimisticAppointment = {
           ...appointmentData,
@@ -264,9 +340,11 @@ const CreateAppointmentForm = ({ onClose, selectedDate = null, appointment = nul
           },
           parked: false,
           status: 'scheduled',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
+          created_at: created_at,
+          updated_at: updated_at
         }
+        
+        console.log('CreateAppointmentForm: Applying optimistic update:', optimisticAppointment)
         
         // Apply optimistic update immediately
         dispatch(optimisticCreateAppointment(optimisticAppointment))
@@ -277,8 +355,12 @@ const CreateAppointmentForm = ({ onClose, selectedDate = null, appointment = nul
         // Close modal immediately for instant feedback
         onClose()
         
+        console.log('CreateAppointmentForm: Dispatching createAppointment with data:', appointmentData)
+        
         // Perform actual creation
-        await dispatch(createAppointment(appointmentData)).unwrap()
+        const result = await dispatch(createAppointment(appointmentData)).unwrap()
+        
+        console.log('CreateAppointmentForm: Create appointment result:', result)
       }
       
       // Reset loading state after successful submission

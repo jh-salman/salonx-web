@@ -319,7 +319,10 @@ export const parkAppointment = createAsyncThunk(
         .from('appointments')
         .update({ 
           parked: true,
-          status: APPOINTMENT_STATUS.PARKED 
+          status: APPOINTMENT_STATUS.PARKED,
+          service_id: null,
+          date: null,
+          duration: null
         })
         .eq('id', id)
         .select(`
@@ -420,6 +423,81 @@ export const unparkAppointment = createAsyncThunk(
   }
 )
 
+export const unparkAppointmentWithDetails = createAsyncThunk(
+  'appointments/unparkAppointmentWithDetails',
+  async ({ id, serviceId, date, duration }, { getState, rejectWithValue }) => {
+    try {
+      const { auth } = getState()
+      const profile = auth.profile
+
+      console.log('unparkAppointmentWithDetails: Unparking appointment with details:', { id, serviceId, date, duration })
+
+      // Check permissions first
+      const { data: existingAppointment } = await supabase
+        .from('appointments')
+        .select('stylist_id, created_by')
+        .eq('id', id)
+        .single()
+
+      if (!existingAppointment) {
+        throw new Error('Appointment not found')
+      }
+
+      const canUnpark = 
+        existingAppointment.stylist_id === profile.id ||
+        existingAppointment.created_by === profile.id ||
+        (auth.mode === 'team' && auth.profile.role === 'owner')
+
+      if (!canUnpark) {
+        throw new Error('Permission denied')
+      }
+
+      // Validate required fields
+      if (!serviceId || !date || !duration) {
+        throw new Error('Service, date, and duration are required to unpark appointment')
+      }
+
+      const { data, error } = await supabase
+        .from('appointments')
+        .update({ 
+          parked: false,
+          status: APPOINTMENT_STATUS.SCHEDULED,
+          service_id: serviceId,
+          date: date,
+          duration: duration
+        })
+        .eq('id', id)
+        .select(`
+          *,
+          clients (
+            id,
+            full_name,
+            phone,
+            email
+          ),
+          services (
+            id,
+            name,
+            price,
+            duration
+          )
+        `)
+        .single()
+
+      if (error) {
+        console.error('unparkAppointmentWithDetails: Error unparking appointment:', error)
+        throw error
+      }
+
+      console.log('unparkAppointmentWithDetails: Successfully unparked appointment:', data)
+      return data
+    } catch (error) {
+      console.error('unparkAppointmentWithDetails: Error:', error)
+      return rejectWithValue(error.message)
+    }
+  }
+)
+
 // Initial state
 const initialState = {
   appointments: [],
@@ -483,37 +561,59 @@ const appointmentsSlice = createSlice({
     },
     optimisticUpdateAppointment: (state, action) => {
       const { id, updates } = action.payload
+      console.log('optimisticUpdateAppointment called with:', { id, updates })
+      
       const index = state.appointments.findIndex(apt => apt.id === id)
+      console.log('Found appointment at index:', index)
       
       if (index !== -1) {
+        const originalAppointment = state.appointments[index]
+        console.log('Original appointment:', originalAppointment)
+        
         const updatedAppointment = { ...state.appointments[index], ...updates }
         state.appointments[index] = updatedAppointment
+        console.log('Updated appointment:', updatedAppointment)
         
         // Update in active/parked lists
         const activeIndex = state.activeAppointments.findIndex(apt => apt.id === id)
         const parkedIndex = state.parkedAppointments.findIndex(apt => apt.id === id)
         
+        console.log('Active index:', activeIndex, 'Parked index:', parkedIndex)
+        console.log('Updated appointment parked status:', updatedAppointment.parked)
+        
         if (updatedAppointment.parked) {
           // Move to parked list
+          console.log('Moving to parked list')
           if (activeIndex !== -1) {
             state.activeAppointments.splice(activeIndex, 1)
+            console.log('Removed from active list')
           }
           if (parkedIndex === -1) {
             state.parkedAppointments.push(updatedAppointment)
+            console.log('Added to parked list')
           } else {
             state.parkedAppointments[parkedIndex] = updatedAppointment
+            console.log('Updated in parked list')
           }
         } else {
           // Move to active list
+          console.log('Moving to active list')
           if (parkedIndex !== -1) {
             state.parkedAppointments.splice(parkedIndex, 1)
+            console.log('Removed from parked list')
           }
           if (activeIndex === -1) {
             state.activeAppointments.push(updatedAppointment)
+            console.log('Added to active list')
           } else {
             state.activeAppointments[activeIndex] = updatedAppointment
+            console.log('Updated in active list')
           }
         }
+        
+        console.log('Final state counts - appointments:', state.appointments.length, 'active:', state.activeAppointments.length, 'parked:', state.parkedAppointments.length)
+      } else {
+        console.log('Appointment not found in state')
       }
     },
     optimisticDeleteAppointment: (state, action) => {
@@ -809,6 +909,21 @@ const appointmentsSlice = createSlice({
         state.isLoading = false
         state.error = action.payload
         console.error('appointmentsSlice: unparkAppointment.rejected -', action.payload)
+      })
+      .addCase(unparkAppointmentWithDetails.pending, (state, action) => {
+        state.isLoading = true
+        state.error = null
+        // Don't add optimistic update here - let the component handle it
+      })
+      .addCase(unparkAppointmentWithDetails.fulfilled, (state, action) => {
+        state.isLoading = false
+        console.log('appointmentsSlice: unparkAppointmentWithDetails.fulfilled - appointment unparked with details, realtime will handle UI update:', action.payload)
+        // Realtime will handle the UI update, so we don't manually update state here
+      })
+      .addCase(unparkAppointmentWithDetails.rejected, (state, action) => {
+        state.isLoading = false
+        state.error = action.payload
+        console.error('appointmentsSlice: unparkAppointmentWithDetails.rejected -', action.payload)
       })
   }
 })

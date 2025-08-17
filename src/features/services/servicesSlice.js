@@ -161,9 +161,33 @@ const servicesSlice = createSlice({
       state.isLoading = false
       state.error = null
     },
+    // Optimistic updates
+    optimisticCreateService: (state, action) => {
+      console.log('servicesSlice: Applying optimistic create service:', action.payload)
+      state.services.push(action.payload)
+    },
+    optimisticUpdateService: (state, action) => {
+      const { id, updates } = action.payload
+      const index = state.services.findIndex(service => service.id === id)
+      if (index !== -1) {
+        state.services[index] = { ...state.services[index], ...updates }
+      }
+    },
+    optimisticDeleteService: (state, action) => {
+      state.services = state.services.filter(service => service.id !== action.payload)
+    },
     // Realtime updates
     serviceAdded: (state, action) => {
-      state.services.push(action.payload)
+      console.log('servicesSlice: Realtime service added:', action.payload)
+      // Check if service already exists (from optimistic update)
+      const existingIndex = state.services.findIndex(service => service.id === action.payload.id)
+      if (existingIndex !== -1) {
+        // Replace optimistic service with real data
+        state.services[existingIndex] = action.payload
+      } else {
+        // Add new service
+        state.services.push(action.payload)
+      }
     },
     serviceUpdated: (state, action) => {
       const index = state.services.findIndex(service => service.id === action.payload.id)
@@ -252,6 +276,9 @@ export const {
   clearFilters, 
   clearError,
   resetLoadingState,
+  optimisticCreateService,
+  optimisticUpdateService,
+  optimisticDeleteService,
   serviceAdded,
   serviceUpdated,
   serviceDeleted

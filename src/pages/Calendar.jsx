@@ -93,112 +93,10 @@ const Calendar = () => {
   }
 
   return (
-    <div className="min-h-screen theme-bg">
-      {/* Header */}
-      <header className="theme-bg shadow-lg border-b theme-border">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <h1 className="text-xl font-bold theme-text">SalonX</h1>
-              </div>
-              <nav className="ml-10 flex space-x-8">
-                <Link
-                  to="/dashboard"
-                  className="theme-text opacity-70 hover:opacity-100 px-1 pt-1 text-sm font-medium transition-colors"
-                >
-                  Dashboard
-                </Link>
-                <Link
-                  to="/calendar"
-                  className="theme-accent border-b-2 border-current px-1 pt-1 text-sm font-medium"
-                >
-                  Calendar
-                </Link>
-              </nav>
-            </div>
-            
-            <div className="flex items-center space-x-4">
-              <button
-                onClick={() => setShowCreateModal(true)}
-                className="theme-gradient text-white px-4 py-2 rounded-lg font-medium flex items-center space-x-2 transition-all duration-200 theme-hover"
-              >
-                <Plus className="w-4 h-4" />
-                <span>New Appointment</span>
-              </button>
-              <div className="text-sm theme-text opacity-70">
-                <span className="font-medium">{profile?.full_name}</span>
-              </div>
-              <SignoutButton 
-                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center space-x-2"
-                onSignoutComplete={() => {
-                  console.log('Logout successful')
-                }}
-              >
-                <LogOut className="w-4 h-4" />
-                <span>Logout</span>
-              </SignoutButton>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="theme-card rounded-lg p-6 border theme-border">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <CalendarIcon className="w-8 h-8 text-purple-400" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium theme-text opacity-70">Total Appointments</p>
-                <p className="text-2xl font-bold theme-text">{appointments.length}</p>
-              </div>
-            </div>
-          </div>
-          
-          <div className="theme-card rounded-lg p-6 border theme-border">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <Clock className="w-8 h-8 text-blue-400" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium theme-text opacity-70">Today's Appointments</p>
-                <p className="text-2xl font-bold theme-text">
-                  {appointments.filter(apt => apt.appointment_date === new Date().toISOString().split('T')[0]).length}
-                </p>
-              </div>
-            </div>
-          </div>
-          
-          <div className="theme-card rounded-lg p-6 border theme-border">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <User className="w-8 h-8 text-green-400" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium theme-text opacity-70">Total Clients</p>
-                <p className="text-2xl font-bold theme-text">{clients.length}</p>
-              </div>
-            </div>
-          </div>
-          
-          <div className="theme-card rounded-lg p-6 border theme-border">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <Scissors className="w-8 h-8 text-orange-400" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium theme-text opacity-70">Services</p>
-                <p className="text-2xl font-bold theme-text">{services.length}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
+    <div className="min-h-screen bg-gray-900">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-screen">
         {/* Calendar */}
-        <div className="theme-card rounded-lg shadow-lg border theme-border">
+        <div className="w-full h-full">
           <CustomCalendar onDateSelect={handleDateSelect} />
         </div>
       </div>
@@ -329,7 +227,6 @@ const Calendar = () => {
           </div>
         </div>
       )}
-      
     </div>
   )
 }

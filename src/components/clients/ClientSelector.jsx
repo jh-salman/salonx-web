@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
-import { fetchClients, createClient } from '../../features/clients/clientsSlice'
+import { fetchClients, createClient, optimisticCreateClient } from '../../features/clients/clientsSlice'
 import { addSuccess, addError } from '../../features/alerts/alertsSlice'
 import { User, Plus, ChevronDown, X } from 'lucide-react'
 import LoadingSpinner from '../shared/LoadingSpinner'
@@ -48,21 +48,40 @@ const ClientSelector = ({ selectedClient, onClientSelect, onClose, ...props }) =
     }
     
     try {
-      console.log('ClientSelector: Dispatching createClient...')
-      const result = await dispatch(createClient(newClient)).unwrap()
-      console.log('ClientSelector: createClient result:', result)
+      // Create temporary ID for optimistic update
+      const tempId = `temp_client_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
       
-      // Auto-select the newly created client
-      if (result) {
-        handleClientSelect(result)
+      const optimisticClient = {
+        ...newClient,
+        id: tempId,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       }
       
+      console.log('ClientSelector: Applying optimistic update:', optimisticClient)
+      
+      // Apply optimistic update immediately
+      dispatch(optimisticCreateClient(optimisticClient))
+      
+      // Auto-select the newly created client immediately
+      handleClientSelect(optimisticClient)
+      
+      // Show success message immediately
       dispatch(addSuccess({
         message: 'Client added successfully',
         title: 'Success'
       }))
+      
+      // Close form immediately for instant feedback
       setShowAddForm(false)
       setNewClient({ full_name: '', phone: '', email: '', birthday: '' })
+      
+      console.log('ClientSelector: Dispatching createClient...')
+      
+      // Perform actual creation
+      const result = await dispatch(createClient(newClient)).unwrap()
+      console.log('ClientSelector: createClient result:', result)
+      
     } catch (error) {
       console.error('ClientSelector: Error creating client:', error)
       dispatch(addError({
