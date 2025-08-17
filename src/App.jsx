@@ -229,7 +229,7 @@ function App() {
 
   return (
     <ThemeProvider>
-      <div className={`min-h-screen theme-bg theme-text`}>
+      <div className={`min-h-screen bg-black text-white`}>
         <AlertContainer />
         
         {/* Navbar - Only show when authenticated */}

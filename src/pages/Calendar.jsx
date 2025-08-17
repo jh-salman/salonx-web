@@ -8,6 +8,7 @@ import { selectServices } from '../features/services/servicesSlice'
 import { selectCurrentTheme } from '../features/theme/themeSlice'
 import CustomCalendar from '../components/calendar/CustomCalendar'
 import SignoutButton from '../components/SignoutButton'
+import ErrorBoundary from '../components/shared/ErrorBoundary'
 import { Plus, Calendar as CalendarIcon, Clock, User, Scissors, LogOut } from 'lucide-react'
 
 const Calendar = () => {
@@ -93,11 +94,13 @@ const Calendar = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-900">
+    <div className="min-h-screen bg-black">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-screen">
         {/* Calendar */}
         <div className="w-full h-full">
-          <CustomCalendar onDateSelect={handleDateSelect} />
+          <ErrorBoundary>
+            <CustomCalendar onDateSelect={handleDateSelect} />
+          </ErrorBoundary>
         </div>
       </div>
 

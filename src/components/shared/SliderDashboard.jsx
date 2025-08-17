@@ -192,27 +192,27 @@ const SliderDashboard = ({ isOpen, onClose }) => {
 
       {/* Slider Dashboard */}
       <div className={`
-        fixed top-0 left-0 h-full w-80 bg-white dark:bg-gray-900 shadow-2xl z-50 transform transition-transform duration-300 ease-in-out flex flex-col
+        fixed top-0 left-0 h-full w-80 bg-black shadow-2xl z-50 transform transition-transform duration-300 ease-in-out flex flex-col
         ${isOpen ? 'translate-x-0' : '-translate-x-full'}
       `}>
         {/* Header - Fixed */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700 flex-shrink-0 bg-white dark:bg-gray-900">
+        <div className="flex items-center justify-between p-6 border-b border-gray-700 flex-shrink-0 bg-black">
           <div className="flex items-center space-x-3">
             <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
               <Scissors className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h2 className="text-lg font-bold text-gray-900 dark:text-white">
+              <h2 className="text-lg font-bold text-white">
                 SalonX
               </h2>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
+              <p className="text-sm text-gray-300">
                 {profile?.full_name || 'Stylist'}
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+            className="p-2 text-white hover:text-gray-300 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -222,7 +222,7 @@ const SliderDashboard = ({ isOpen, onClose }) => {
         <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent">
           {/* Navigation Menu */}
           <div className="p-4">
-            <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">
+            <h3 className="text-sm font-semibold text-gray-300 uppercase tracking-wider mb-3">
               Navigation
             </h3>
             <nav className="space-y-1">
@@ -233,7 +233,7 @@ const SliderDashboard = ({ isOpen, onClose }) => {
                     key={item.name}
                     to={item.path}
                     onClick={onClose}
-                    className="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                    className="flex items-center space-x-3 px-3 py-2 rounded-lg text-white hover:bg-gray-800 transition-colors"
                   >
                     <Icon className={`w-5 h-5 ${item.color}`} />
                     <span className="font-medium">{item.name}</span>
@@ -598,7 +598,7 @@ const SliderDashboard = ({ isOpen, onClose }) => {
 
         {/* Footer - Fixed */}
         <div 
-          className="p-4 border-t border-gray-300 dark:border-gray-600 flex-shrink-0 bg-white dark:bg-gray-900"
+                      className="p-4 border-t border-gray-600 flex-shrink-0 bg-black"
         >
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">

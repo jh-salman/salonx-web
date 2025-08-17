@@ -35,7 +35,7 @@ export default function AppointmentDetails() {
 
   if (!apt) {
     return (
-      <div className="min-h-screen bg-gray-900 text-gray-200 p-6">
+      <div className="min-h-screen bg-black text-gray-200 p-6">
         <div className="max-w-3xl mx-auto">
           <Link to="/calendar" className="inline-flex items-center text-blue-400 hover:text-blue-300 mb-4">
             <ArrowLeft className="w-4 h-4 mr-2" /> Back to calendar
@@ -49,7 +49,7 @@ export default function AppointmentDetails() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 text-gray-200 p-6">
+    <div className="min-h-screen bg-black text-gray-200 p-6">
       <div className="max-w-3xl mx-auto">
         <Link to="/calendar" className="inline-flex items-center text-blue-400 hover:text-blue-300 mb-4">
           <ArrowLeft className="w-4 h-4 mr-2" /> Back to calendar

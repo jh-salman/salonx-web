@@ -95,7 +95,7 @@
 
 /* Global dark theme */
 body {
-  background-color: var(--bg-primary);
+  background-color: #000000;
   color: var(--text-primary);
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }

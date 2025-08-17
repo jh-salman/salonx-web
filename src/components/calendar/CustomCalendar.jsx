@@ -41,6 +41,7 @@ import {
   HelpCircle
 } from 'lucide-react'
 import CreateAppointmentForm from '../appointments/CreateAppointmentForm'
+import ErrorBoundary from '../shared/ErrorBoundary'
 
 const CustomCalendar = () => {
   const dispatch = useDispatch()
@@ -170,6 +171,46 @@ const CustomCalendar = () => {
     
     return filteredAppointments
   }, [appointmentsByDate])
+
+  // Handle slot click for showing options bottom sheet
+  const handleSlotClick = useCallback((date, time, event) => {
+    // Only handle clicks on empty slots (not on appointment cards)
+    if (event.target.closest('.appointment-card')) {
+      return
+    }
+    
+    console.log('Slot clicked:', { date, time })
+    
+    // Validate inputs
+    if (!date || !time) {
+      console.error('handleSlotClick: Invalid date or time:', { date, time })
+      return
+    }
+    
+    try {
+      // Calculate slot start and end time
+      const slotStart = new Date(date)
+      const [hours, minutes] = time.split(':')
+      slotStart.setHours(parseInt(hours), parseInt(minutes), 0, 0)
+      
+      const slotEnd = new Date(slotStart.getTime() + 60 * 60000) // 60 minutes default
+      
+      console.log('handleSlotClick: Created slot:', { slotStart, slotEnd })
+      
+      // Set selected slot and show options bottom sheet
+      setSelectedSlot({
+        start: slotStart,
+        end: slotEnd
+      })
+      setShowSlotOptionsSheet(true)
+    } catch (error) {
+      console.error('handleSlotClick: Error creating slot:', error)
+      dispatch(addError({
+        message: 'Error creating time slot',
+        title: 'Error'
+      }))
+    }
+  }, [dispatch])
 
   // Get time slots (8 AM to 8 PM)
   const getTimeSlots = useCallback(() => {
@@ -1679,9 +1720,9 @@ const CustomCalendar = () => {
     const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`
 
     return (
-      <div className="flex flex-col h-full bg-gray-900">
+      <div className="flex flex-col h-full bg-black">
         {/* Time slots */}
-        <div className="flex-1 overflow-auto bg-gray-900">
+        <div className="flex-1 overflow-auto bg-black">
           {timeSlots.map((time, timeIndex) => {
             const currentHour = parseInt(time.split(':')[0])
             const currentMinute = parseInt(time.split(':')[1])
@@ -1694,7 +1735,7 @@ const CustomCalendar = () => {
                 {/* Current time indicator */}
                 {isCurrentTime && (
                   <div className="absolute top-0 left-0 w-full h-0.5 bg-red-500 z-10">
-                    <div className="absolute -left-20 top-0 text-xs text-red-500 bg-gray-900 px-1">
+                    <div className="absolute -left-20 top-0 text-xs text-red-500 bg-black px-1">
                       {currentTime}
                     </div>
                   </div>
@@ -1814,9 +1855,9 @@ const CustomCalendar = () => {
     const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`
 
     return (
-      <div className="flex h-full bg-gray-900">
+      <div className="flex h-full bg-black">
         {/* Time Axis */}
-        <div className="w-20 bg-gray-900 border-r border-gray-700">
+        <div className="w-20 bg-black border-r border-gray-700">
           {timeSlots.map((time, index) => (
             <div key={time} className="relative h-16 border-b border-gray-700">
               <div className="absolute top-0 left-0 w-full h-full flex items-center justify-end pr-2">
@@ -1835,7 +1876,12 @@ const CustomCalendar = () => {
         </div>
 
         {/* Schedule Area */}
-        <div className="flex-1 bg-gray-900 relative">
+        <div 
+          className="flex-1 bg-black relative"
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+        >
           {/* Clickable time slots for creating appointments */}
           {timeSlots.map((time, index) => (
             <div 
@@ -1848,6 +1894,9 @@ const CustomCalendar = () => {
                   handleSlotClick(currentDate, time, e)
                 }
               }}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
               data-time-slot="true"
               data-date={currentDate.toISOString()}
               data-time={time}
@@ -1875,7 +1924,7 @@ const CustomCalendar = () => {
                   className="absolute left-0 w-full h-0.5 bg-red-500 z-10"
                   style={{ top: `${topPosition}px` }}
                 >
-                  <div className="absolute -left-20 top-0 text-xs text-red-500 bg-gray-900 px-1">
+                  <div className="absolute -left-20 top-0 text-xs text-red-500 bg-black px-1">
                     {currentTime}
                   </div>
                 </div>
@@ -1938,6 +1987,14 @@ const CustomCalendar = () => {
                   e.dataTransfer.effectAllowed = 'move'
                   console.log('Data transfer set successfully')
                 }}
+                onClick={(e) => {
+                  // Handle single click for appointment details
+                  if (e && e.stopPropagation) {
+                    e.stopPropagation()
+                  }
+                  setSelectedAppointment(apt)
+                  setShowAppointmentDetails(true)
+                }}
               >
                 <div className="flex items-start justify-between h-full">
                   <div className="flex-1 min-w-0">
@@ -1957,7 +2014,7 @@ const CustomCalendar = () => {
         </div>
       </div>
     )
-  }, [currentDate, getAppointmentsForDate])
+  }, [currentDate, getAppointmentsForDate, handleSlotClick, isLongPressing, selectedAppointmentForOptions, longPressCompleted, handleLongPress, handleLongPressEnd, handleDoubleClick])
 
   // Render month view
   const renderMonthView = useCallback(() => {
@@ -1978,7 +2035,7 @@ const CustomCalendar = () => {
     }
 
     return (
-      <div className="flex flex-col h-full bg-gray-900">
+      <div className="flex flex-col h-full bg-black">
         {/* Header */}
         <div className="grid grid-cols-7 border-b border-gray-700 bg-gray-800">
           {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
@@ -1989,7 +2046,7 @@ const CustomCalendar = () => {
         </div>
 
         {/* Calendar grid */}
-        <div className="flex-1 grid grid-cols-7 bg-gray-900">
+        <div className="flex-1 grid grid-cols-7 bg-black">
           {days.map((day, index) => {
             const dayAppointments = getAppointmentsForDate(day)
             const isCurrentMonth = day.getMonth() === month
@@ -1999,7 +2056,7 @@ const CustomCalendar = () => {
               <div
                 key={index}
                 className={`min-h-32 p-2 border-r border-b border-gray-700 hover:bg-gray-800/50 transition-colors cursor-pointer ${
-                  isToday ? 'bg-blue-600/20' : 'bg-gray-900'
+                  isToday ? 'bg-blue-600/20' : 'bg-black'
                 } ${!isCurrentMonth ? 'opacity-40' : ''}`}
                 onClick={() => {
                   setCurrentDate(day)
@@ -2416,45 +2473,7 @@ const CustomCalendar = () => {
     })
   }, [])
 
-  // Handle slot click for showing options bottom sheet
-  const handleSlotClick = useCallback((date, time, event) => {
-    // Only handle clicks on empty slots (not on appointment cards)
-    if (event.target.closest('.appointment-card')) {
-      return
-    }
-    
-    console.log('Slot clicked:', { date, time })
-    
-    // Validate inputs
-    if (!date || !time) {
-      console.error('handleSlotClick: Invalid date or time:', { date, time })
-      return
-    }
-    
-    try {
-      // Calculate slot start and end time
-      const slotStart = new Date(date)
-      const [hours, minutes] = time.split(':')
-      slotStart.setHours(parseInt(hours), parseInt(minutes), 0, 0)
-      
-      const slotEnd = new Date(slotStart.getTime() + 60 * 60000) // 60 minutes default
-      
-      console.log('handleSlotClick: Created slot:', { slotStart, slotEnd })
-      
-      // Set selected slot and show options bottom sheet
-      setSelectedSlot({
-        start: slotStart,
-        end: slotEnd
-      })
-      setShowSlotOptionsSheet(true)
-    } catch (error) {
-      console.error('handleSlotClick: Error creating slot:', error)
-      dispatch(addError({
-        message: 'Error creating time slot',
-        title: 'Error'
-      }))
-    }
-  }, [dispatch])
+
 
   // Handle drag to park bar
   const handleDragToPark = useCallback((appointment) => {
@@ -2594,7 +2613,7 @@ const CustomCalendar = () => {
 
   return (
     <div 
-      className="w-full h-full flex flex-col bg-gray-900 text-white"
+                className="w-full h-full flex flex-col bg-black text-white"
       onClick={(e) => {
         // Don't handle clicks on time slots or appointment cards
         if (e.target.closest('[data-time-slot]') || e.target.closest('.appointment-card')) {
@@ -2616,7 +2635,7 @@ const CustomCalendar = () => {
       }}
     >
       {/* Header Bar - Day, Week, Month View Toggles */}
-      <div className="flex items-center justify-between p-4 bg-gray-900 border-b border-gray-700">
+              <div className="flex items-center justify-between p-4 bg-black border-b border-gray-700">
         {/* Left Navigation */}
         <div className="flex items-center space-x-4">
           <button
@@ -2684,7 +2703,7 @@ const CustomCalendar = () => {
 
       {/* Shared Date Selector Row - Only for Day and Week views */}
       {(viewMode === 'day' || viewMode === 'week') && (
-        <div className="px-2 py-1 bg-gray-900 border-b border-gray-700">
+        <div className="px-2 py-1 bg-black border-b border-gray-700">
           <div className="grid grid-cols-8">
             {/* Empty first column for time alignment */}
             <div className="border-r border-gray-700"></div>
@@ -2736,7 +2755,7 @@ const CustomCalendar = () => {
 
       {/* Dynamic Waiting List & Parked Appointments - Only for Day and Week views */}
       {(viewMode === 'day' || viewMode === 'week') && (
-        <div className="px-6 py-2 bg-gray-900 border-b border-gray-700">
+        <div className="px-6 py-2 bg-black border-b border-gray-700">
           
                     {/* Combined Waiting List & Parked Appointments */}
           <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-800">
@@ -2884,7 +2903,7 @@ const CustomCalendar = () => {
       )}
 
       {/* Calendar Grid */}
-      <div className="flex-1 bg-gray-900 overflow-auto">
+              <div className="flex-1 bg-black overflow-auto">
         {viewMode === 'day' && renderDayView()}
         {viewMode === 'week' && renderWeekView()}
         {viewMode === 'month' && renderMonthView()}
@@ -2907,7 +2926,7 @@ const CustomCalendar = () => {
       {/* Appointment Details Modal */}
       {showAppointmentDetails && selectedAppointment && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-gray-900 rounded-lg shadow-xl w-full max-w-md mx-4 border border-gray-700">
+          <div className="bg-black rounded-lg shadow-xl w-full max-w-md mx-4 border border-gray-700">
             <div className="flex items-center justify-between p-4 border-b border-gray-700">
               <h2 className="text-lg font-semibold text-white">Appointment Details</h2>
               <button

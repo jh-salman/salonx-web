@@ -12,7 +12,7 @@ const LoadingState = ({ message = "Loading...", timeout = 3000 }) => {
   }, [timeout])
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-900">
+    <div className="min-h-screen flex items-center justify-center bg-black">
       <div className="text-center">
         <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mb-4"></div>
         <p className="text-gray-300 mb-2">{message}</p>

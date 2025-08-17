@@ -10,7 +10,7 @@ import {
 import { fetchClients, resetLoadingState as resetClientsLoading } from '../../features/clients/clientsSlice'
 import { fetchServices, resetLoadingState as resetServicesLoading } from '../../features/services/servicesSlice'
 import { addSuccess, addError } from '../../features/alerts/alertsSlice'
-import { Calendar, Clock, User, DollarSign, FileText, X } from 'lucide-react'
+import { Calendar, Clock, User, DollarSign, FileText, X, ChevronDown, MapPin, RotateCcw, Paperclip } from 'lucide-react'
 import ClientSelector from '../clients/ClientSelector'
 import ServiceSelector from '../services/ServiceSelector'
 import LoadingSpinner from '../shared/LoadingSpinner'
@@ -420,22 +420,24 @@ const CreateAppointmentForm = ({ onClose, selectedDate = null, appointment = nul
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="theme-modal rounded-lg shadow-xl w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto border theme-border">
+      <div className="bg-gray-900 rounded-lg shadow-xl w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b theme-border">
-          <h2 className="text-2xl font-bold theme-text">
-            {isEditing ? 'Edit Appointment' : 'Create New Appointment'}
-          </h2>
-          <button
-            onClick={onClose}
-            className="theme-text opacity-70 hover:opacity-100 transition-colors"
-          >
-            <X className="w-6 h-6" />
-          </button>
+        <div className="bg-blue-900 rounded-t-lg p-4">
+          <div className="flex items-center space-x-3">
+            <button
+              onClick={onClose}
+              className="text-white hover:text-gray-300 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <h2 className="text-xl font-bold text-white">
+              New Appointment
+            </h2>
+          </div>
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+        <form onSubmit={handleSubmit} className="p-6 space-y-4">
           {/* Loading Indicator */}
           {(clientsLoading || servicesLoading) && (
             <div className="theme-card border theme-border rounded-md p-4 mb-4">
@@ -450,8 +452,8 @@ const CreateAppointmentForm = ({ onClose, selectedDate = null, appointment = nul
 
           {/* Client Selection */}
           <div className="space-y-2">
-            <label className="block text-sm font-medium theme-text">
-              Customer *
+            <label className="block text-sm font-medium text-gray-300">
+              Select Customer
             </label>
             <div className={`${errors.client_id ? 'border-red-500' : ''}`}>
               <ClientSelector
@@ -464,33 +466,12 @@ const CreateAppointmentForm = ({ onClose, selectedDate = null, appointment = nul
             {errors.client_id && (
               <p className="text-red-500 text-sm">{errors.client_id}</p>
             )}
-            {clientsLoading && (
-              <p className="text-blue-400 text-sm">Loading clients...</p>
-            )}
-            {!clientsLoading && clients.length === 0 && (
-              <div className="bg-yellow-900 border border-yellow-700 rounded-md p-3">
-                <p className="text-yellow-300 text-sm">No clients available. Please create a client first.</p>
-                <button
-                  type="button"
-                  onClick={() => {
-                    // This will trigger the ClientSelector to show the add form
-                    const clientSelector = document.querySelector('[data-client-selector]')
-                    if (clientSelector) {
-                      clientSelector.click()
-                    }
-                  }}
-                  className="text-yellow-400 hover:text-yellow-300 text-sm underline mt-1"
-                >
-                  Create your first client
-                </button>
-              </div>
-            )}
           </div>
 
           {/* Service Selection */}
           <div className="space-y-2">
-            <label className="block text-sm font-medium theme-text">
-              Service *
+            <label className="block text-sm font-medium text-gray-300">
+              Select Service
             </label>
             <div className={`${errors.service_id ? 'border-red-500' : ''}`}>
               <ServiceSelector
@@ -503,178 +484,134 @@ const CreateAppointmentForm = ({ onClose, selectedDate = null, appointment = nul
             {errors.service_id && (
               <p className="text-red-500 text-sm">{errors.service_id}</p>
             )}
-            {servicesLoading && (
-              <p className="text-blue-400 text-sm">Loading services...</p>
-            )}
-            {!servicesLoading && services.length === 0 && (
-              <div className="bg-yellow-900 border border-yellow-700 rounded-md p-3">
-                <p className="text-yellow-300 text-sm">No services available. Please create a service first.</p>
-                <button
-                  type="button"
-                  onClick={() => {
-                    // This will trigger the ServiceSelector to show the add form
-                    const serviceSelector = document.querySelector('[data-service-selector]')
-                    if (serviceSelector) {
-                      serviceSelector.click()
-                    }
-                  }}
-                  className="text-yellow-400 hover:text-yellow-300 text-sm underline mt-1"
-                >
-                  Create your first service
-                </button>
-              </div>
-            )}
           </div>
 
-          {/* Date and Time */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium theme-text mb-2">
-                <Calendar className="w-4 h-4 inline mr-2" />
-                Date & Time *
-              </label>
-              <input
-                type="datetime-local"
-                name="date"
-                value={formData.date}
-                onChange={handleInputChange}
-                className={`w-full px-3 py-2 theme-input border rounded-md theme-text focus:outline-none focus:ring-2 focus:ring-purple-500 ${
-                  errors.date ? 'border-red-500' : 'theme-border'
-                }`}
-              />
-              {errors.date && (
-                <p className="text-red-500 text-sm mt-1">{errors.date}</p>
-              )}
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium theme-text mb-2">
-                <Clock className="w-4 h-4 inline mr-2" />
-                Duration (minutes) *
-              </label>
-              <input
-                type="number"
-                name="duration"
-                value={formData.duration}
-                onChange={handleInputChange}
-                min="15"
-                step="15"
-                className={`w-full px-3 py-2 theme-input border rounded-md theme-text focus:outline-none focus:ring-2 focus:ring-purple-500 ${
-                  errors.duration ? 'border-red-500' : 'theme-border'
-                }`}
-              />
-              {errors.duration && (
-                <p className="text-red-500 text-sm mt-1">{errors.duration}</p>
-              )}
-            </div>
-          </div>
-
-          {/* Price and Type */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium theme-text mb-2">
-                <DollarSign className="w-4 h-4 inline mr-2" />
-                Price ($) *
-              </label>
-              <input
-                type="number"
-                name="price"
-                value={formData.price}
-                onChange={handleInputChange}
-                min="0"
-                step="0.01"
-                className={`w-full px-3 py-2 theme-input border rounded-md theme-text focus:outline-none focus:ring-2 focus:ring-purple-500 ${
-                  errors.price ? 'border-red-500' : 'theme-border'
-                }`}
-              />
-              {errors.price && (
-                <p className="text-red-500 text-sm mt-1">{errors.price}</p>
-              )}
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium theme-text mb-2">
-                Appointment Type
-              </label>
-              <select
-                name="type"
-                value={formData.type}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 theme-input border theme-border rounded-md theme-text focus:outline-none focus:ring-2 focus:ring-purple-500"
-              >
-                <option value="normal" className="theme-input theme-text">Normal</option>
-                <option value="consultation" className="theme-input theme-text">Consultation</option>
-                <option value="follow_up" className="theme-input theme-text">Follow Up</option>
-              </select>
-            </div>
-          </div>
-
-          {/* Deposit */}
-          <div>
-            <label className="block text-sm font-medium theme-text mb-2">
-              Deposit Percentage (%)
-            </label>
+          {/* Date */}
+          <div className="flex items-center p-3 border border-gray-600 rounded-md bg-gray-800">
+            <Calendar className="w-4 h-4 text-gray-400 mr-3" />
+            <span className="text-white flex-1">Date</span>
             <input
-              type="number"
-              name="deposit_percent"
-              value={formData.deposit_percent}
+              type="datetime-local"
+              name="date"
+              value={formData.date}
               onChange={handleInputChange}
-              min="0"
-              max="100"
-              className="w-full px-3 py-2 theme-input border theme-border rounded-md theme-text focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="bg-transparent text-white text-right outline-none"
+              required
             />
           </div>
 
+          {/* Price */}
+          <div className="flex items-center p-3 border border-gray-600 rounded-md bg-gray-800">
+            <DollarSign className="w-4 h-4 text-gray-400 mr-3" />
+            <span className="text-white flex-1">Price</span>
+            <input
+              type="number"
+              name="price"
+              value={formData.price}
+              onChange={handleInputChange}
+              min="0"
+              step="0.01"
+              className="bg-transparent text-white text-right outline-none"
+              placeholder="0"
+            />
+          </div>
+
+          {/* Duration */}
+          <div className="flex items-center p-3 border border-gray-600 rounded-md bg-gray-800">
+            <Clock className="w-4 h-4 text-gray-400 mr-3" />
+            <span className="text-white flex-1">Duration</span>
+            <input
+              type="number"
+              name="duration"
+              value={formData.duration}
+              onChange={handleInputChange}
+              min="15"
+              step="15"
+              className="bg-transparent text-white text-right outline-none"
+              placeholder="60"
+            />
+          </div>
+
+          {/* Appointment Type */}
+          <div className="flex items-center p-3 border border-gray-600 rounded-md bg-gray-800">
+            <MapPin className="w-4 h-4 text-gray-400 mr-3" />
+            <span className="text-white flex-1">Appointment type</span>
+            <select
+              name="type"
+              value={formData.type}
+              onChange={handleInputChange}
+              className="bg-transparent text-white text-right outline-none"
+            >
+              <option value="normal" className="bg-gray-800 text-white">Normal</option>
+              <option value="consultation" className="bg-gray-800 text-white">Consultation</option>
+              <option value="follow_up" className="bg-gray-800 text-white">Follow Up</option>
+            </select>
+          </div>
+
+          {/* Repeat */}
+          <div className="flex items-center p-3 border border-gray-600 rounded-md bg-gray-800">
+            <RotateCcw className="w-4 h-4 text-gray-400 mr-3" />
+            <span className="text-white flex-1">Repeat</span>
+            <div className="w-10 h-6 bg-gray-600 rounded-full relative">
+              <div className="w-4 h-4 bg-gray-400 rounded-full absolute top-1 left-1"></div>
+            </div>
+          </div>
+
+          {/* Deposit Due */}
+          <div className="flex items-center p-3 border border-gray-600 rounded-md bg-gray-800">
+            <DollarSign className="w-4 h-4 text-gray-400 mr-3" />
+            <span className="text-white flex-1">Deposit due</span>
+            <span className="text-white">50%</span>
+          </div>
+
+          {/* Attachments */}
+          <div className="flex items-center p-3 border border-gray-600 rounded-md bg-gray-800">
+            <Paperclip className="w-4 h-4 text-gray-400 mr-3" />
+            <span className="text-white flex-1">Attachments</span>
+            <span className="text-blue-400">upload</span>
+          </div>
+
           {/* Notes */}
-          <div>
-            <label className="block text-sm font-medium theme-text mb-2">
-              Notes
-            </label>
+          <div className="border border-gray-600 rounded-md bg-gray-800">
+            <div className="flex justify-between items-center p-3 border-b border-gray-600">
+              <span className="text-white">Notes</span>
+              <span className="text-white text-sm">{formData.notes?.length || 0}/500</span>
+            </div>
             <textarea
               name="notes"
               value={formData.notes}
               onChange={handleInputChange}
+              maxLength={500}
               rows="3"
-              className="w-full px-3 py-2 theme-input border theme-border rounded-md theme-text focus:outline-none focus:ring-2 focus:ring-purple-500"
-              placeholder="Any special instructions or notes..."
+              className="w-full p-3 bg-transparent text-white outline-none resize-none"
+              placeholder=""
             />
           </div>
 
 
 
           {/* Action Buttons */}
-          <div className="flex justify-end space-x-4 pt-4 border-t theme-border">
+          <div className="space-y-3 pt-4">
             <button
-              type="button"
-              onClick={() => {
-                dispatch(resetClientsLoading())
-                dispatch(resetServicesLoading())
-                dispatch(resetLoadingState())
-              }}
-              className="px-2 py-1 text-xs theme-text opacity-70 theme-card rounded border theme-border hover:opacity-80"
+              type="submit"
+              disabled={isLoading || !isFormValid()}
+              className="w-full py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-semibold"
             >
-              Reset Loading
+              {isLoading ? (
+                <div className="flex items-center justify-center">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Creating...
+                </div>
+              ) : (
+                'BOOK'
+              )}
             </button>
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 theme-text theme-card rounded-md hover:opacity-80 transition-colors"
+              className="w-full py-3 bg-gray-800 text-white rounded-md hover:bg-gray-700 transition-colors font-semibold"
             >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={isLoading || !isFormValid()}
-              className="px-4 py-2 theme-gradient text-white rounded-md theme-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center min-w-[140px]"
-            >
-              {isLoading ? (
-                <div className="flex items-center">
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  {isEditing ? 'Updating...' : 'Creating...'}
-                </div>
-              ) : (
-                isEditing ? 'Update Appointment' : 'Create Appointment'
-              )}
+              CANCEL
             </button>
           </div>
         </form>

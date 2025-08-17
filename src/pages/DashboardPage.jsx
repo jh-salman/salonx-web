@@ -304,7 +304,7 @@ const DashboardPage = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen theme-bg flex items-center justify-center">
+      <div className="min-h-screen bg-black flex items-center justify-center">
         <div className="text-center">
           <AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-4" />
           <h2 className="text-xl font-semibold theme-text mb-2">Error Loading Dashboard</h2>
@@ -321,7 +321,7 @@ const DashboardPage = () => {
   }
 
   return (
-    <div className="min-h-screen theme-bg">
+    <div className="min-h-screen bg-black">
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 

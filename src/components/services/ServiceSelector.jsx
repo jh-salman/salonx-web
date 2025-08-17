@@ -139,21 +139,13 @@ const ServiceSelector = ({ selectedService, onServiceSelect, onClose, ...props }
       {/* Dropdown */}
       {isOpen && (
         <div className="absolute z-50 w-full mt-1 bg-gray-800 border border-gray-600 rounded-md shadow-lg max-h-60 overflow-y-auto">
-          {/* Search and Add New */}
+          {/* Header */}
           <div className="p-3 border-b border-gray-600">
-            <div className="flex items-center mb-2">
-              <input
-                type="text"
-                placeholder="Search services..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="flex-1 p-2 border border-gray-600 rounded-md bg-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
-              />
-            </div>
+            <h3 className="text-sm font-medium text-gray-400 mb-3">Service list</h3>
             
             <button
               onClick={() => setShowAddForm(true)}
-              className="w-full flex items-center justify-center p-2 text-purple-400 hover:bg-gray-700 rounded-md transition-colors"
+              className="w-full flex items-center justify-center p-2 text-blue-400 hover:bg-gray-700 rounded-md transition-colors"
             >
               <Plus className="w-4 h-4 mr-2" />
               Add new
@@ -169,7 +161,7 @@ const ServiceSelector = ({ selectedService, onServiceSelect, onClose, ...props }
               </div>
             ) : filteredServices.length === 0 ? (
               <div className="p-3 text-center text-gray-400">
-                {searchTerm ? 'No services found matching your search' : 'No services available'}
+                No services available
               </div>
             ) : (
               filteredServices.map((service) => (
@@ -178,7 +170,7 @@ const ServiceSelector = ({ selectedService, onServiceSelect, onClose, ...props }
                   onClick={() => handleServiceSelect(service)}
                   className="w-full flex items-center p-3 hover:bg-gray-700 transition-colors"
                 >
-                  <div className="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center mr-3">
+                  <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center mr-3">
                     <FileText className="w-4 h-4 text-white" />
                   </div>
                   <div className="text-left flex-1">

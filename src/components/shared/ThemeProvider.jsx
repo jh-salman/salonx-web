@@ -6,7 +6,7 @@ const ThemeProvider = ({ children }) => {
   const currentTheme = useSelector(selectCurrentTheme)
 
   return (
-    <div className={`theme-${currentTheme}`}>
+    <div className={`theme-${currentTheme} bg-black`}>
       {children}
     </div>
   )

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { fetchClients, createClient, optimisticCreateClient } from '../../features/clients/clientsSlice'
 import { addSuccess, addError } from '../../features/alerts/alertsSlice'
-import { User, Plus, ChevronDown, X } from 'lucide-react'
+import { User, Plus, ChevronDown, X, Camera } from 'lucide-react'
 import LoadingSpinner from '../shared/LoadingSpinner'
 
 const ClientSelector = ({ selectedClient, onClientSelect, onClose, ...props }) => {
@@ -19,6 +19,8 @@ const ClientSelector = ({ selectedClient, onClientSelect, onClose, ...props }) =
     email: '',
     birthday: ''
   })
+  const [profileImage, setProfileImage] = useState(null)
+  const [imagePreview, setImagePreview] = useState(null)
 
   // Load clients when component mounts
   useEffect(() => {
@@ -51,8 +53,14 @@ const ClientSelector = ({ selectedClient, onClientSelect, onClose, ...props }) =
       // Create temporary ID for optimistic update
       const tempId = `temp_client_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
       
-      const optimisticClient = {
+      // Create client data with profile image
+      const clientData = {
         ...newClient,
+        profile_image: imagePreview // Add the profile image URL
+      }
+      
+      const optimisticClient = {
+        ...clientData,
         id: tempId,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
@@ -75,11 +83,13 @@ const ClientSelector = ({ selectedClient, onClientSelect, onClose, ...props }) =
       // Close form immediately for instant feedback
       setShowAddForm(false)
       setNewClient({ full_name: '', phone: '', email: '', birthday: '' })
+      setProfileImage(null)
+      setImagePreview(null)
       
       console.log('ClientSelector: Dispatching createClient...')
       
       // Perform actual creation
-      const result = await dispatch(createClient(newClient)).unwrap()
+      const result = await dispatch(createClient(clientData)).unwrap()
       console.log('ClientSelector: createClient result:', result)
       
     } catch (error) {
@@ -103,6 +113,43 @@ const ClientSelector = ({ selectedClient, onClientSelect, onClose, ...props }) =
     setSearchTerm('')
   }
 
+  const handleImageUpload = (event) => {
+    const file = event.target.files[0]
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        dispatch(addError({
+          message: 'Please select a valid image file',
+          title: 'Invalid File Type'
+        }))
+        return
+      }
+      
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        dispatch(addError({
+          message: 'Image size should be less than 5MB',
+          title: 'File Too Large'
+        }))
+        return
+      }
+      
+      setProfileImage(file)
+      
+      // Create preview
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        setImagePreview(e.target.result)
+      }
+      reader.readAsDataURL(file)
+    }
+  }
+
+  const removeImage = () => {
+    setProfileImage(null)
+    setImagePreview(null)
+  }
+
   return (
     <div className="relative">
       {/* Trigger Button */}
@@ -113,7 +160,17 @@ const ClientSelector = ({ selectedClient, onClientSelect, onClose, ...props }) =
         {...props}
       >
         <div className="flex items-center">
-          <User className="w-4 h-4 text-gray-400 mr-2" />
+          <div className="w-6 h-6 bg-gray-600 rounded-full flex items-center justify-center mr-2 overflow-hidden">
+            {selectedClient?.profile_image ? (
+              <img 
+                src={selectedClient.profile_image} 
+                alt={selectedClient.full_name}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <User className="w-3 h-3 text-gray-400" />
+            )}
+          </div>
           <span className={selectedClient ? 'text-white' : 'text-gray-400'}>
             {selectedClient ? selectedClient.full_name : 'Select Customer'}
           </span>
@@ -124,21 +181,13 @@ const ClientSelector = ({ selectedClient, onClientSelect, onClose, ...props }) =
       {/* Dropdown */}
       {isOpen && (
         <div className="absolute z-50 w-full mt-1 bg-gray-800 border border-gray-600 rounded-md shadow-lg max-h-60 overflow-y-auto">
-          {/* Search and Add New */}
+          {/* Header */}
           <div className="p-3 border-b border-gray-600">
-            <div className="flex items-center mb-2">
-              <input
-                type="text"
-                placeholder="Search clients..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="flex-1 p-2 border border-gray-600 rounded-md bg-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
-              />
-            </div>
+            <h3 className="text-sm font-medium text-gray-400 mb-3">Custom list</h3>
             
             <button
               onClick={() => setShowAddForm(true)}
-              className="w-full flex items-center justify-center p-2 text-purple-400 hover:bg-gray-700 rounded-md transition-colors"
+              className="w-full flex items-center justify-center p-2 text-blue-400 hover:bg-gray-700 rounded-md transition-colors"
             >
               <Plus className="w-4 h-4 mr-2" />
               Add new
@@ -154,7 +203,7 @@ const ClientSelector = ({ selectedClient, onClientSelect, onClose, ...props }) =
               </div>
             ) : filteredClients.length === 0 ? (
               <div className="p-3 text-center text-gray-400">
-                {searchTerm ? 'No clients found matching your search' : 'No clients available'}
+                No clients available
               </div>
             ) : (
               filteredClients.map((client) => (
@@ -163,14 +212,19 @@ const ClientSelector = ({ selectedClient, onClientSelect, onClose, ...props }) =
                   onClick={() => handleClientSelect(client)}
                   className="w-full flex items-center p-3 hover:bg-gray-700 transition-colors"
                 >
-                  <div className="w-8 h-8 bg-gray-600 rounded-full flex items-center justify-center mr-3">
-                    <User className="w-4 h-4 text-gray-300" />
+                  <div className="w-8 h-8 bg-gray-600 rounded-full flex items-center justify-center mr-3 overflow-hidden">
+                    {client.profile_image ? (
+                      <img 
+                        src={client.profile_image} 
+                        alt={client.full_name}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <User className="w-4 h-4 text-gray-300" />
+                    )}
                   </div>
                   <div className="text-left">
                     <div className="font-medium text-white">{client.full_name}</div>
-                    {client.phone && (
-                      <div className="text-sm text-gray-400">{client.phone}</div>
-                    )}
                   </div>
                 </button>
               ))
@@ -182,28 +236,76 @@ const ClientSelector = ({ selectedClient, onClientSelect, onClose, ...props }) =
       {/* Add New Client Modal */}
       {showAddForm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-gray-800 rounded-lg shadow-xl w-full max-w-md mx-4">
-            <div className="flex items-center justify-between p-4 border-b border-gray-600">
-              <h2 className="text-lg font-semibold text-white">Add New Client</h2>
-              <button
-                onClick={() => setShowAddForm(false)}
-                className="text-gray-400 hover:text-gray-300"
-              >
-                <X className="w-5 h-5" />
-              </button>
+          <div className="bg-gray-900 rounded-lg shadow-xl w-full max-w-md mx-4">
+            <div className="flex items-center justify-between p-4 border-b border-gray-700">
+              <div className="flex items-center space-x-3">
+                <button
+                  onClick={() => setShowAddForm(false)}
+                  className="text-gray-400 hover:text-white transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+                <h2 className="text-xl font-bold text-white">New Customer</h2>
+              </div>
             </div>
             
             <div className="p-4 space-y-4">
+              {/* Profile Picture */}
+              <div className="flex justify-center mb-4">
+                <div className="relative">
+                  <div className="w-20 h-20 bg-gray-700 rounded-full flex items-center justify-center overflow-hidden">
+                    {imagePreview ? (
+                      <img 
+                        src={imagePreview} 
+                        alt="Profile preview" 
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <User className="w-10 h-10 text-gray-400" />
+                    )}
+                  </div>
+                  <label className="absolute bottom-0 right-0 w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center cursor-pointer hover:bg-blue-600 transition-colors">
+                    <Camera className="w-3 h-3 text-white" />
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      className="hidden"
+                    />
+                  </label>
+                  {imagePreview && (
+                    <button
+                      onClick={removeImage}
+                      className="absolute top-0 right-0 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center text-white text-xs hover:bg-red-600 transition-colors"
+                    >
+                      ×
+                    </button>
+                  )}
+                </div>
+              </div>
+              
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-1">
-                  Full Name *
+                  Name
                 </label>
                 <input
                   type="text"
                   required
                   value={newClient.full_name}
                   onChange={(e) => setNewClient({...newClient, full_name: e.target.value})}
-                  className="w-full p-2 border border-gray-600 rounded-md bg-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  className="w-full p-2 border border-gray-600 rounded-md bg-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">
+                  Pronouns
+                </label>
+                <input
+                  type="text"
+                  value={newClient.pronouns || ''}
+                  onChange={(e) => setNewClient({...newClient, pronouns: e.target.value})}
+                  className="w-full p-2 border border-gray-600 rounded-md bg-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
               
@@ -215,7 +317,7 @@ const ClientSelector = ({ selectedClient, onClientSelect, onClose, ...props }) =
                   type="tel"
                   value={newClient.phone}
                   onChange={(e) => setNewClient({...newClient, phone: e.target.value})}
-                  className="w-full p-2 border border-gray-600 rounded-md bg-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  className="w-full p-2 border border-gray-600 rounded-md bg-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
               
@@ -227,7 +329,7 @@ const ClientSelector = ({ selectedClient, onClientSelect, onClose, ...props }) =
                   type="email"
                   value={newClient.email}
                   onChange={(e) => setNewClient({...newClient, email: e.target.value})}
-                  className="w-full p-2 border border-gray-600 rounded-md bg-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  className="w-full p-2 border border-gray-600 rounded-md bg-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
               
@@ -239,8 +341,11 @@ const ClientSelector = ({ selectedClient, onClientSelect, onClose, ...props }) =
                   type="date"
                   value={newClient.birthday}
                   onChange={(e) => setNewClient({...newClient, birthday: e.target.value})}
-                  className="w-full p-2 border border-gray-600 rounded-md bg-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  className="w-full p-2 border border-gray-600 rounded-md bg-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
+                <p className="text-xs text-gray-400 mt-1">
+                  Enter a birthday you turn on birthday emails in Booking & Notifications so your clients can receive a beautiful birthday email from your on their birthday!
+                </p>
               </div>
               
               <div className="flex justify-end space-x-3 pt-4">
@@ -249,14 +354,14 @@ const ClientSelector = ({ selectedClient, onClientSelect, onClose, ...props }) =
                   onClick={() => setShowAddForm(false)}
                   className="px-4 py-2 text-gray-300 bg-gray-600 rounded-md hover:bg-gray-500 transition-colors"
                 >
-                  Cancel
+                  CANCEL
                 </button>
                 <button
                   type="button"
                   onClick={handleAddClient}
-                  className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors"
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
                 >
-                  Add Client
+                  SAVE
                 </button>
               </div>
             </div>
